@@ -1,68 +1,55 @@
-# DivisionPro — Kumon Division Tracker PWA
+# Kids Math — Division Practice PWA
 
-A standalone, offline-capable Progressive Web App for Kumon-style division practice. Built for touch screens with live scoring, stopwatch timing, and trend analytics.
+A gamified, iOS-aesthetic division practice tracker. Built as a fully offline Progressive Web App.
 
-## Features
+## 🎮 Gamification Features
 
-- **4 Difficulty Levels**: Starter → Master (divisors 1–12)
-- **20 questions per section**, sections A–H per level
-- **Stopwatch timer** — tracks total time per section
-- **Touch numpad** — large buttons, tap to enter answers
-- **Instant feedback** — correct/wrong with colour animation
-- **Live score bar** — score, accuracy %, and progress fill
-- **Results review** — see every question with your answer
-- **Trend chart** — accuracy, time, and score over sessions
-- **Session history** — date, time, level, accuracy
+- **XP System** — earn XP per correct answer, bonus for combos and perfect runs
+- **XP Levels** — 10+ levels with progress bar (100 → 4000+ XP thresholds)
+- **Combo Streaks** — consecutive correct answers multiply XP rewards
+- **Hearts** — 3 lives per session, lost on wrong answers
+- **10 Achievements** — First Right, On Fire, Perfect Run, Speed Demon, Scholar, and more
+- **Daily Streak** — 🔥 fire badge for consecutive days practiced
+- **Level-Up Modal** — celebration popup when you gain an XP level
+
+## 📊 Practice Features
+
+- 4 difficulty levels (Starter → Master)
+- 20 questions per section (A–H per level)
+- Live stopwatch timer
+- Large touch numpad
+- Instant correct/wrong animations (spring pop, shake)
+- Accuracy %, score, and XP earned live per section
+- Per-question answer review on results screen
+- Confetti on 80%+ accuracy
+
+## 📈 Progress Tracking
+
+- **Trend chart** — accuracy, time, or score over all sessions (canvas-drawn, no deps)
+- **Session history** — every session with date, time, accuracy
 - **Best records** — fastest time and best accuracy per level
-- **100% offline** — works without internet after first load
-- **Installable PWA** — add to home screen on iOS/Android
 
-## Deploy to GitHub Pages
+## 🚀 Deploy to GitHub Pages
 
-1. Fork or clone this repo
-2. Push all files to your `main` branch (or `gh-pages`)
-3. Go to **Settings → Pages** → Source: `main` / `root`
-4. Your app will be live at `https://yourusername.github.io/repo-name/`
+1. Push all files to your repo root on `main` branch
+2. **Settings → Pages → Source: main / root**
+3. Visit `https://yourusername.github.io/your-repo/`
+4. **Add to Home Screen** on iPhone: Share → Add to Home Screen
 
-> ⚠️ The Service Worker requires HTTPS — GitHub Pages provides this automatically.
-
-## Project Structure
+## 📁 File Structure
 
 ```
 /
-├── index.html          # Main app shell
-├── manifest.json       # PWA manifest
-├── sw.js               # Service Worker (offline cache)
-├── css/
-│   └── style.css       # All styles
-├── js/
-│   └── app.js          # App logic, scoring, storage, charts
-└── icons/
-    ├── icon-192.png    # PWA icon
-    └── icon-512.png    # PWA icon
+├── index.html       App shell & all screens
+├── manifest.json    PWA manifest
+├── sw.js            Service Worker (offline cache)
+├── css/style.css    iOS gamified design system
+├── js/app.js        App logic + gamification engine
+└── icons/           PWA icons (192 & 512px)
 ```
 
-## Data Storage
+## 🔧 Customise
 
-All session data is stored in `localStorage` — no server, no account needed. Data persists across sessions on the same device/browser. Use the **Clear** button in Progress to reset.
+Edit `LEVELS` in `js/app.js` to change divisor ranges, or `ACHIEVEMENTS` to add new badges.
 
-## Adding to Home Screen
-
-- **iOS Safari**: Share → Add to Home Screen
-- **Android Chrome**: Menu (⋮) → Add to Home Screen
-- **Desktop Chrome**: Install icon in address bar
-
-## Customising Levels
-
-Edit `LEVELS` in `js/app.js`:
-
-```js
-const LEVELS = {
-  1: { name: 'Starter', divisors: [1,2,3], maxDividend: 30 },
-  // add more levels here
-};
-```
-
-## License
-
-MIT — free for personal and educational use.
+MIT License — free for personal and educational use.

@@ -1,202 +1,213 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#0a0a1a" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="DivisionPro" />
-  <title>DivisionPro — Kumon Tracker</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
+  <meta name="theme-color" content="#f2f2f7"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="Kids Math"/>
+  <title>Kids Math — Division</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
 
-<!-- ========== SPLASH / HOME ========== -->
+<!-- HOME -->
 <div id="screen-home" class="screen active">
-  <div class="home-bg">
-    <div class="bg-grid"></div>
-    <div class="bg-orb orb1"></div>
-    <div class="bg-orb orb2"></div>
-  </div>
-  <div class="home-content">
-    <div class="logo-mark">÷</div>
-    <h1 class="home-title">Division<span>Pro</span></h1>
-    <p class="home-sub">Kumon-style practice tracker with live scoring & analytics</p>
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+  <div class="home-scroll">
+    <div class="home-topbar">
+      <div class="streak-pill"><span>🔥</span><span id="streak-count">0</span></div>
+      <div class="hero-wordmark">Kids Math</div>
+      <button class="icon-btn" id="btn-progress-icon" aria-label="Progress">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="12" width="4" height="7" rx="1.5" fill="currentColor" opacity=".4"/><rect x="8" y="7" width="4" height="12" rx="1.5" fill="currentColor" opacity=".7"/><rect x="15" y="2" width="4" height="17" rx="1.5" fill="currentColor"/></svg>
+      </button>
+    </div>
 
-    <div class="level-grid">
-      <div class="level-card" data-level="1">
-        <span class="level-tag">Level 1</span>
-        <h3>Starter</h3>
-        <p>÷ 1–3 &nbsp;|&nbsp; dividends 1–30</p>
-        <div class="level-badge">Easy</div>
+    <div class="xp-bar-card">
+      <div class="xpbc-top">
+        <span class="xp-stars">⭐ <strong id="xp-total">0</strong> XP</span>
+        <span class="xp-lvl-tag">Lv <span id="xp-level">1</span></span>
       </div>
-      <div class="level-card" data-level="2">
-        <span class="level-tag">Level 2</span>
-        <h3>Explorer</h3>
-        <p>÷ 1–5 &nbsp;|&nbsp; dividends 1–50</p>
-        <div class="level-badge medium">Medium</div>
+      <div class="xp-track"><div class="xp-fill" id="xp-fill"></div></div>
+      <div class="xp-hint"><span id="xp-next-val">100</span> XP to level up</div>
+    </div>
+
+    <div class="section-head">Choose Difficulty</div>
+    <div class="level-cards" id="level-cards">
+      <div class="lcard selected" data-level="1">
+        <span class="lcard-emoji">🌱</span>
+        <div class="lcard-body"><div class="lcard-name">Starter</div><div class="lcard-desc">÷ 1–3</div></div>
+        <span class="lcard-badge easy">Easy</span>
       </div>
-      <div class="level-card" data-level="3">
-        <span class="level-tag">Level 3</span>
-        <h3>Challenger</h3>
-        <p>÷ 1–9 &nbsp;|&nbsp; dividends 1–81</p>
-        <div class="level-badge hard">Hard</div>
+      <div class="lcard" data-level="2">
+        <span class="lcard-emoji">🚀</span>
+        <div class="lcard-body"><div class="lcard-name">Explorer</div><div class="lcard-desc">÷ 1–5</div></div>
+        <span class="lcard-badge medium">Medium</span>
       </div>
-      <div class="level-card" data-level="4">
-        <span class="level-tag">Level 4</span>
-        <h3>Master</h3>
-        <p>÷ 2–12 &nbsp;|&nbsp; dividends 12–144</p>
-        <div class="level-badge expert">Expert</div>
+      <div class="lcard" data-level="3">
+        <span class="lcard-emoji">⚡</span>
+        <div class="lcard-body"><div class="lcard-name">Challenger</div><div class="lcard-desc">÷ 1–9</div></div>
+        <span class="lcard-badge hard">Hard</span>
+      </div>
+      <div class="lcard" data-level="4">
+        <span class="lcard-emoji">👑</span>
+        <div class="lcard-body"><div class="lcard-name">Master</div><div class="lcard-desc">÷ 2–12</div></div>
+        <span class="lcard-badge expert">Expert</span>
       </div>
     </div>
 
-    <button class="btn-primary" id="btn-start">Start Practice</button>
-    <button class="btn-ghost" id="btn-progress">View Progress →</button>
+    <div class="section-head">Achievements</div>
+    <div class="achievements-scroll" id="achievements-row"></div>
+
+    <button class="btn-cta" id="btn-start">Start Practice ✦</button>
+    <div class="safe-gap"></div>
   </div>
 </div>
 
-<!-- ========== PRACTICE SCREEN ========== -->
+<!-- PRACTICE -->
 <div id="screen-practice" class="screen">
-  <div class="practice-header">
-    <button class="btn-back" id="btn-back-home">←</button>
-    <div class="header-info">
-      <span class="header-level" id="header-level">Level 1</span>
-      <span class="header-section" id="header-section">Section A</span>
+  <div class="p-topbar">
+    <button class="icon-btn" id="btn-back-home" aria-label="Back">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 3L5 9L11 15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="hearts-row" id="hearts-row">
+      <span class="heart" id="h1">❤️</span><span class="heart" id="h2">❤️</span><span class="heart" id="h3">❤️</span>
     </div>
-    <div class="stopwatch" id="stopwatch">00:00</div>
+    <div class="timer-chip" id="stopwatch">0:00</div>
   </div>
 
-  <div class="score-bar">
-    <div class="score-item">
-      <span class="score-label">Score</span>
-      <span class="score-val" id="live-score">0 / 0</span>
-    </div>
-    <div class="score-item">
-      <span class="score-label">Accuracy</span>
-      <span class="score-val" id="live-accuracy">—</span>
-    </div>
-    <div class="progress-track">
-      <div class="progress-fill" id="progress-fill"></div>
-    </div>
-    <div class="score-item">
-      <span class="score-label">Q</span>
-      <span class="score-val" id="q-counter">1 / 20</span>
-    </div>
+  <div class="p-progress-bar">
+    <div class="p-progress-fill" id="p-progress-fill"></div>
   </div>
 
-  <div class="question-area">
-    <div class="question-card" id="question-card">
+  <div class="stat-row">
+    <div class="stat-pill green"><span>✓</span><strong id="s-correct">0</strong></div>
+    <div class="stat-pill red"><span>✗</span><strong id="s-wrong">0</strong></div>
+    <div class="stat-pill blue"><span>%</span><strong id="s-acc">—</strong></div>
+    <div class="stat-pill gold"><span>⭐</span><strong id="s-xp">+0</strong></div>
+  </div>
+
+  <div class="q-zone">
+    <div class="q-card" id="q-card">
+      <div class="q-tag" id="q-tag">Level 1 · Section A</div>
       <div class="equation">
-        <span class="eq-dividend" id="eq-dividend">48</span>
-        <span class="eq-op">÷</span>
-        <span class="eq-divisor" id="eq-divisor">6</span>
-        <span class="eq-eq">=</span>
-        <span class="eq-answer" id="eq-answer">?</span>
+        <span class="eq-big" id="eq-dividend">48</span>
+        <span class="eq-sym">÷</span>
+        <span class="eq-big" id="eq-divisor">6</span>
+        <span class="eq-sym">=</span>
+        <div class="eq-answer-wrap" id="eq-answer-wrap">
+          <span class="eq-answer" id="eq-answer">?</span>
+        </div>
       </div>
-      <div class="feedback-msg" id="feedback-msg"></div>
+      <div class="feedback" id="feedback"></div>
     </div>
+    <div class="combo-pill" id="combo-pill"></div>
   </div>
 
   <div class="numpad-area">
     <div class="numpad-display" id="numpad-display">_</div>
-    <div class="numpad-grid">
-      <button class="numpad-btn" data-val="7">7</button>
-      <button class="numpad-btn" data-val="8">8</button>
-      <button class="numpad-btn" data-val="9">9</button>
-      <button class="numpad-btn" data-val="4">4</button>
-      <button class="numpad-btn" data-val="5">5</button>
-      <button class="numpad-btn" data-val="6">6</button>
-      <button class="numpad-btn" data-val="1">1</button>
-      <button class="numpad-btn" data-val="2">2</button>
-      <button class="numpad-btn" data-val="3">3</button>
-      <button class="numpad-btn numpad-clear" data-val="C">C</button>
-      <button class="numpad-btn" data-val="0">0</button>
-      <button class="numpad-btn numpad-submit" data-val="✓">✓</button>
+    <div class="numpad" id="numpad">
+      <button class="nk" data-v="7">7</button>
+      <button class="nk" data-v="8">8</button>
+      <button class="nk" data-v="9">9</button>
+      <button class="nk" data-v="4">4</button>
+      <button class="nk" data-v="5">5</button>
+      <button class="nk" data-v="6">6</button>
+      <button class="nk" data-v="1">1</button>
+      <button class="nk" data-v="2">2</button>
+      <button class="nk" data-v="3">3</button>
+      <button class="nk nk-del" data-v="C">⌫</button>
+      <button class="nk" data-v="0">0</button>
+      <button class="nk nk-go" data-v="GO" id="nk-go">✓</button>
     </div>
   </div>
+  <div class="safe-gap"></div>
 </div>
 
-<!-- ========== RESULTS SCREEN ========== -->
+<!-- RESULTS -->
 <div id="screen-results" class="screen">
-  <div class="results-bg">
-    <div class="results-confetti" id="confetti"></div>
-  </div>
-  <div class="results-content">
-    <div class="results-trophy" id="results-trophy">🏆</div>
-    <h2 class="results-title" id="results-title">Section Complete!</h2>
-    <div class="results-stats">
-      <div class="stat-card">
-        <div class="stat-val" id="res-score">20/20</div>
-        <div class="stat-lbl">Score</div>
+  <div class="blob rb1"></div><div class="blob rb2"></div>
+  <div class="results-scroll">
+    <div class="trophy-wrap">
+      <div class="trophy-ring" id="trophy-ring">
+        <div class="trophy-emoji" id="trophy-emoji">🏆</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-val" id="res-accuracy">100%</div>
-        <div class="stat-lbl">Accuracy</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val" id="res-time">2:34</div>
-        <div class="stat-lbl">Time</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val" id="res-avg">7.7s</div>
-        <div class="stat-lbl">Avg / Q</div>
-      </div>
+      <div class="xp-burst" id="xp-burst">+50 XP</div>
     </div>
-    <div class="results-review" id="results-review"></div>
-    <div class="results-actions">
-      <button class="btn-primary" id="btn-retry">Try Again</button>
-      <button class="btn-secondary" id="btn-next-section">Next Section</button>
-      <button class="btn-ghost" id="btn-results-home">Home</button>
+    <h2 class="r-headline" id="r-headline">Perfect!</h2>
+    <p class="r-sub" id="r-sub">Section A Complete</p>
+
+    <div class="r-stats">
+      <div class="r-stat green"><div class="rsv" id="r-score">20/20</div><div class="rsl">Score</div></div>
+      <div class="r-stat blue"><div class="rsv" id="r-acc">100%</div><div class="rsl">Accuracy</div></div>
+      <div class="r-stat orange"><div class="rsv" id="r-time">2:34</div><div class="rsl">Time</div></div>
+      <div class="r-stat purple"><div class="rsv" id="r-avg">7.7s</div><div class="rsl">Avg/Q</div></div>
+    </div>
+
+    <div class="new-badges" id="new-badges"></div>
+
+    <div class="review-header">
+      <span class="review-title">Answer Review</span>
+      <button class="review-toggle" id="review-toggle">Show ▾</button>
+    </div>
+    <div class="review-list" id="review-list" style="display:none"></div>
+
+    <div class="r-actions">
+      <button class="btn-cta" id="btn-retry">🔄 Try Again</button>
+      <button class="btn-outline" id="btn-next-section">Next Section →</button>
+      <button class="btn-ghost-sm" id="btn-results-home">Back to Home</button>
+    </div>
+    <div class="safe-gap"></div>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div id="screen-progress" class="screen">
+  <div class="prog-topbar">
+    <button class="icon-btn" id="btn-back-progress">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 3L5 9L11 15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <span class="prog-title">My Progress</span>
+    <button class="text-btn-red" id="btn-clear-data">Clear</button>
+  </div>
+
+  <div class="seg-control">
+    <button class="seg active" data-tab="trend">Trend</button>
+    <button class="seg" data-tab="history">History</button>
+    <button class="seg" data-tab="bests">Bests</button>
+  </div>
+
+  <div class="prog-body">
+    <div class="seg-content active" id="seg-trend">
+      <div class="filter-row">
+        <select id="c-level"><option value="all">All Levels</option><option value="1">Starter</option><option value="2">Explorer</option><option value="3">Challenger</option><option value="4">Master</option></select>
+        <select id="c-metric"><option value="accuracy">Accuracy %</option><option value="time">Time (s)</option><option value="score">Score</option></select>
+      </div>
+      <div class="chart-wrap"><canvas id="trend-chart"></canvas><div class="chart-empty" id="chart-empty">Complete a section to see your trend!</div></div>
+    </div>
+    <div class="seg-content" id="seg-history">
+      <div class="hist-list" id="hist-list"></div>
+      <div class="chart-empty" id="hist-empty">No sessions yet!</div>
+    </div>
+    <div class="seg-content" id="seg-bests">
+      <div class="bests-grid" id="bests-grid"></div>
+      <div class="chart-empty" id="bests-empty">Complete sessions to see records!</div>
     </div>
   </div>
 </div>
 
-<!-- ========== PROGRESS SCREEN ========== -->
-<div id="screen-progress" class="screen">
-  <div class="progress-header">
-    <button class="btn-back" id="btn-back-progress">←</button>
-    <h2>Progress</h2>
-    <button class="btn-ghost small" id="btn-clear-data">Clear</button>
-  </div>
-
-  <div class="progress-tabs">
-    <button class="tab active" data-tab="chart">Trend</button>
-    <button class="tab" data-tab="history">History</button>
-    <button class="tab" data-tab="best">Best</button>
-  </div>
-
-  <div class="tab-content active" id="tab-chart">
-    <div class="chart-controls">
-      <select id="chart-level-filter">
-        <option value="all">All Levels</option>
-        <option value="1">Level 1</option>
-        <option value="2">Level 2</option>
-        <option value="3">Level 3</option>
-        <option value="4">Level 4</option>
-      </select>
-      <select id="chart-metric">
-        <option value="accuracy">Accuracy %</option>
-        <option value="time">Time (seconds)</option>
-        <option value="score">Score</option>
-      </select>
-    </div>
-    <canvas id="trend-chart" width="700" height="300"></canvas>
-    <div class="chart-empty" id="chart-empty">No data yet. Complete a section to see your trend!</div>
-  </div>
-
-  <div class="tab-content" id="tab-history">
-    <div class="history-list" id="history-list"></div>
-    <div class="chart-empty" id="history-empty" style="display:none">No sessions yet!</div>
-  </div>
-
-  <div class="tab-content" id="tab-best">
-    <div class="bests-grid" id="bests-grid"></div>
-    <div class="chart-empty" id="bests-empty" style="display:none">Complete sessions to see records!</div>
+<!-- LEVEL UP MODAL -->
+<div class="modal-overlay" id="modal-levelup" style="display:none">
+  <div class="modal-card">
+    <div class="modal-star">⭐</div>
+    <h3>Level Up!</h3>
+    <p>You're now <strong>Level <span id="modal-lvl">2</span></strong></p>
+    <button class="btn-cta" id="btn-dismiss-levelup">Awesome! 🎉</button>
   </div>
 </div>
 

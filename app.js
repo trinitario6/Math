@@ -1,457 +1,582 @@
-/* ============================================
-   DivisionPro — App Logic
-   ============================================ */
-
+/* ═══════════════════════════════════════════════
+   Kids Math — App Logic
+   Gamification: XP, levels, achievements, hearts,
+                 combo streaks, daily streak
+═══════════════════════════════════════════════ */
 'use strict';
 
-// ── State ──────────────────────────────────────────────────────────────
+// ── Config ──────────────────────────────────────────────────────────────────
 const LEVELS = {
-  1: { name: 'Starter',    divisors: [1,2,3],     maxDividend: 30  },
-  2: { name: 'Explorer',   divisors: [1,2,3,4,5], maxDividend: 50  },
-  3: { name: 'Challenger', divisors: [1,2,3,4,5,6,7,8,9], maxDividend: 81  },
-  4: { name: 'Master',     divisors: [2,3,4,5,6,7,8,9,10,11,12], maxDividend: 144 }
+  1: { name:'Starter',    emoji:'🌱', divisors:[1,2,3],              maxDividend:30  },
+  2: { name:'Explorer',   emoji:'🚀', divisors:[1,2,3,4,5],          maxDividend:50  },
+  3: { name:'Challenger', emoji:'⚡', divisors:[1,2,3,4,5,6,7,8,9], maxDividend:81  },
+  4: { name:'Master',     emoji:'👑', divisors:[2,3,4,5,6,7,8,9,10,11,12], maxDividend:144 },
 };
-
 const SECTIONS = ['A','B','C','D','E','F','G','H'];
 
+// XP config
+const XP_PER_CORRECT   = 10;
+const XP_COMBO_BONUS   = [0,0,5,10,15,20,25]; // bonus at combo 2,3,4,5,6+
+const XP_PERFECT_BONUS = 30;
+const XP_LEVEL_THRESHOLDS = [0,100,250,450,700,1000,1400,1900,2500,3200,4000];
+
+// Achievements definition
+const ACHIEVEMENTS = [
+  { id:'first_blood',  icon:'🎯', name:'First Right',  desc:'Get your first correct answer',           check:(stats)=> stats.totalCorrect >= 1 },
+  { id:'hat_trick',    icon:'🎩', name:'Hat Trick',    desc:'3 correct in a row',                       check:(stats)=> stats.bestCombo >= 3 },
+  { id:'on_fire',      icon:'🔥', name:'On Fire',      desc:'5 correct in a row',                       check:(stats)=> stats.bestCombo >= 5 },
+  { id:'perfect_10',   icon:'💯', name:'Perfect 10',   desc:'Score 10/10 on a section (first 10)',      check:(stats)=> stats.hasMini10 },
+  { id:'perfect',      icon:'🏆', name:'Perfect Run',  desc:'20/20 on a section',                       check:(stats)=> stats.hasPerfect },
+  { id:'speed_demon',  icon:'⚡', name:'Speed Demon',  desc:'Complete a section under 90 seconds',      check:(stats)=> stats.fastestTime <= 90000 },
+  { id:'scholar',      icon:'📚', name:'Scholar',      desc:'Complete 5 sections total',                check:(stats)=> stats.totalSections >= 5 },
+  { id:'streak_3',     icon:'🌟', name:'3-Day Streak', desc:'Practice 3 days in a row',                 check:(stats)=> stats.dayStreak >= 3 },
+  { id:'centurion',    icon:'💎', name:'Centurion',    desc:'Earn 100 XP',                              check:(stats)=> stats.totalXP >= 100 },
+  { id:'master_div',   icon:'👑', name:'Division King',desc:'Complete Level 4',                         check:(stats)=> stats.completedLevel4 },
+];
+
+// ── Storage ────────────────────────────────────────────────────────────────
+const DB_KEY      = 'mq_sessions_v2';
+const STATS_KEY   = 'mq_stats_v2';
+const ACH_KEY     = 'mq_achievements_v2';
+
+function loadSessions() { try { return JSON.parse(localStorage.getItem(DB_KEY)||'[]'); } catch { return []; } }
+function saveSession(s)  { const arr=loadSessions(); arr.push(s); localStorage.setItem(DB_KEY, JSON.stringify(arr)); }
+function clearSessions() { localStorage.removeItem(DB_KEY); }
+
+function loadStats() {
+  try {
+    return JSON.parse(localStorage.getItem(STATS_KEY)||'{}');
+  } catch { return {}; }
+}
+function saveStats(s) { localStorage.setItem(STATS_KEY, JSON.stringify(s)); }
+
+function loadAchievements() { try { return JSON.parse(localStorage.getItem(ACH_KEY)||'[]'); } catch { return []; } }
+function saveAchievements(a) { localStorage.setItem(ACH_KEY, JSON.stringify(a)); }
+
+// ── App state ──────────────────────────────────────────────────────────────
 let state = {
-  screen: 'home',
-  level: 1,
-  sectionIdx: 0,
-  questions: [],
-  current: 0,
-  answers: [],       // { correct: bool, given: num, expected: num, time: ms }
-  input: '',
-  timerStart: null,
+  screen:        'home',
+  level:         1,
+  sectionIdx:    0,
+  questions:     [],
+  current:       0,
+  answers:       [],
+  input:         '',
+  timerStart:    null,
   timerInterval: null,
-  qStart: null,
-  totalElapsed: 0,
-  feedbackTimeout: null,
+  totalElapsed:  0,
+  qStart:        null,
+  combo:         0,
+  maxCombo:      0,
+  sessionXP:     0,
+  hearts:        3,
+  feedbackTO:    null,
 };
 
-// ── Storage helpers ─────────────────────────────────────────────────────
-const DB_KEY = 'divisionpro_sessions';
-
-function loadSessions() {
-  try { return JSON.parse(localStorage.getItem(DB_KEY) || '[]'); } catch { return []; }
+// ── Helpers ────────────────────────────────────────────────────────────────
+function fmtTime(ms) {
+  const s=Math.floor(ms/1000), m=Math.floor(s/60);
+  return `${m>0?m+'m ':''}${s%60}s`;
 }
-function saveSession(session) {
-  const sessions = loadSessions();
-  sessions.push(session);
-  localStorage.setItem(DB_KEY, JSON.stringify(sessions));
-}
-function clearSessions() {
-  localStorage.removeItem(DB_KEY);
+function fmtTimerDisplay(ms) {
+  const s=Math.floor(ms/1000), m=Math.floor(s/60);
+  return `${m}:${String(s%60).padStart(2,'0')}`;
 }
 
-// ── Question generation ─────────────────────────────────────────────────
 function genQuestions(level) {
-  const cfg = LEVELS[level];
-  const qs = [];
-  while (qs.length < 20) {
-    const divisor = cfg.divisors[Math.floor(Math.random() * cfg.divisors.length)];
-    const maxQ = Math.floor(cfg.maxDividend / divisor);
-    const quotient = Math.floor(Math.random() * maxQ) + 1;
-    const dividend = divisor * quotient;
-    if (dividend > 0 && dividend <= cfg.maxDividend) {
-      qs.push({ dividend, divisor, answer: quotient });
-    }
+  const cfg=LEVELS[level], qs=[];
+  while(qs.length < 20) {
+    const d = cfg.divisors[Math.floor(Math.random()*cfg.divisors.length)];
+    const maxQ = Math.floor(cfg.maxDividend/d);
+    const q = Math.floor(Math.random()*maxQ)+1;
+    const n = d*q;
+    if (n>0 && n<=cfg.maxDividend) qs.push({dividend:n, divisor:d, answer:q});
   }
   return qs;
 }
 
-// ── Timer ────────────────────────────────────────────────────────────────
+// ── XP system ─────────────────────────────────────────────────────────────
+function getXPLevel(totalXP) {
+  let lvl=1;
+  for (let i=1; i<XP_LEVEL_THRESHOLDS.length; i++) {
+    if (totalXP >= XP_LEVEL_THRESHOLDS[i]) lvl=i+1;
+    else break;
+  }
+  return lvl;
+}
+function getXPProgress(totalXP) {
+  const lvl = getXPLevel(totalXP);
+  const lo = XP_LEVEL_THRESHOLDS[lvl-1] || 0;
+  const hi = XP_LEVEL_THRESHOLDS[lvl]   || (lo+500);
+  return { lvl, lo, hi, pct: Math.min((totalXP-lo)/(hi-lo)*100,100), toNext: hi-totalXP };
+}
+function refreshXPBar() {
+  const stats  = loadStats();
+  const total  = stats.totalXP||0;
+  const { lvl, pct, toNext } = getXPProgress(total);
+  $('xp-total').textContent    = total;
+  $('xp-level').textContent    = lvl;
+  $('xp-fill').style.width     = pct+'%';
+  $('xp-next-val').textContent = Math.max(0,toNext);
+}
+
+// ── Streak / daily ────────────────────────────────────────────────────────
+function updateDailyStreak() {
+  const stats = loadStats();
+  const today = new Date().toDateString();
+  const last  = stats.lastPracticeDate;
+  const yesterday = new Date(Date.now()-86400000).toDateString();
+
+  if (last === today) {
+    // already counted today
+  } else if (last === yesterday) {
+    stats.dayStreak = (stats.dayStreak||0)+1;
+  } else {
+    stats.dayStreak = 1;
+  }
+  stats.lastPracticeDate = today;
+  saveStats(stats);
+  $('streak-count').textContent = stats.dayStreak||1;
+}
+
+// ── Achievements ──────────────────────────────────────────────────────────
+function checkAchievements(newStats) {
+  const earned = loadAchievements();
+  const newlyEarned = [];
+  ACHIEVEMENTS.forEach(ach => {
+    if (!earned.includes(ach.id) && ach.check(newStats)) {
+      earned.push(ach.id);
+      newlyEarned.push(ach);
+    }
+  });
+  saveAchievements(earned);
+  return newlyEarned;
+}
+
+function renderAchievementsRow() {
+  const earned = loadAchievements();
+  const row = $('achievements-row');
+  row.innerHTML = '';
+  ACHIEVEMENTS.forEach(ach => {
+    const div = document.createElement('div');
+    div.className = 'ach-badge' + (earned.includes(ach.id) ? '' : ' locked');
+    div.innerHTML = `<span class="ach-icon">${ach.icon}</span><span class="ach-name">${ach.name}</span>`;
+    div.title = ach.desc;
+    row.appendChild(div);
+  });
+}
+
+// ── Timer ─────────────────────────────────────────────────────────────────
 function startTimer() {
   state.timerStart = Date.now() - state.totalElapsed;
   state.timerInterval = setInterval(() => {
-    const elapsed = Date.now() - state.timerStart;
-    document.getElementById('stopwatch').textContent = formatTime(elapsed);
-  }, 100);
-}
-
-function stopTimer() {
-  if (state.timerInterval) {
-    clearInterval(state.timerInterval);
-    state.timerInterval = null;
     state.totalElapsed = Date.now() - state.timerStart;
-  }
+    $('stopwatch').textContent = fmtTimerDisplay(state.totalElapsed);
+  }, 200);
 }
-
+function stopTimer() {
+  if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval=null; }
+  state.totalElapsed = Date.now() - (state.timerStart||Date.now());
+}
 function resetTimer() {
-  stopTimer();
-  state.totalElapsed = 0;
-  state.timerStart = null;
-  document.getElementById('stopwatch').textContent = '00:00';
+  stopTimer(); state.totalElapsed=0; state.timerStart=null;
+  $('stopwatch').textContent = '0:00';
 }
 
-function formatTime(ms) {
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  return `${String(m).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
-}
-
-function formatTimeFull(ms) {
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  return m > 0 ? `${m}m ${s % 60}s` : `${s}s`;
-}
-
-// ── Screen navigation ────────────────────────────────────────────────────
+// ── Screen ────────────────────────────────────────────────────────────────
 function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(`screen-${name}`).classList.add('active');
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(`screen-${name}`).classList.add('active');
   state.screen = name;
 }
 
-// ── Practice start ────────────────────────────────────────────────────────
+// ── Practice ──────────────────────────────────────────────────────────────
 function startPractice() {
-  state.questions = genQuestions(state.level);
-  state.current = 0;
-  state.answers = [];
-  state.input = '';
+  state.questions    = genQuestions(state.level);
+  state.current      = 0;
+  state.answers      = [];
+  state.input        = '';
+  state.combo        = 0;
+  state.maxCombo     = 0;
+  state.sessionXP    = 0;
+  state.hearts       = 3;
   resetTimer();
-  state.qStart = null;
 
-  document.getElementById('header-level').textContent = `Level ${state.level} — ${LEVELS[state.level].name}`;
-  document.getElementById('header-section').textContent = `Section ${SECTIONS[state.sectionIdx % SECTIONS.length]}`;
-  updateScoreBar();
+  const section = SECTIONS[state.sectionIdx % SECTIONS.length];
+  $('q-tag').textContent = `Level ${state.level} · Section ${section}`;
+
+  renderHearts();
+  updateStatRow();
+  updateProgressBar();
   showScreen('practice');
   loadQuestion();
   startTimer();
-  state.qStart = Date.now();
+  updateDailyStreak();
 }
 
 function loadQuestion() {
   const q = state.questions[state.current];
-  document.getElementById('eq-dividend').textContent = q.dividend;
-  document.getElementById('eq-divisor').textContent = q.divisor;
-  const ans = document.getElementById('eq-answer');
-  ans.textContent = '?';
-  ans.className = 'eq-answer';
-  document.getElementById('numpad-display').textContent = '_';
-  const fb = document.getElementById('feedback-msg');
-  fb.textContent = '';
-  fb.className = 'feedback-msg';
-  const card = document.getElementById('question-card');
-  card.className = 'question-card';
-  document.querySelector('.numpad-submit').disabled = false;
-  state.input = '';
+  $('eq-dividend').textContent = q.dividend;
+  $('eq-divisor').textContent  = q.divisor;
+  $('eq-answer').textContent   = '?';
+  $('eq-answer').className     = 'eq-answer';
+  const wrap = $('eq-answer-wrap');
+  wrap.className = 'eq-answer-wrap';
+  $('numpad-display').textContent = '_';
+  const fb = $('feedback'); fb.textContent=''; fb.className='feedback';
+  $('q-card').className = 'q-card';
+  $('nk-go').disabled = false;
+  $('q-counter') && ($('q-counter').textContent = `${state.current+1}/20`);
+  updateProgressBar();
+  state.input  = '';
   state.qStart = Date.now();
 }
 
 function submitAnswer() {
   if (!state.input) return;
-  const given = parseInt(state.input, 10);
-  const q = state.questions[state.current];
-  const timeTaken = Date.now() - state.qStart;
+  const given   = parseInt(state.input, 10);
+  const q       = state.questions[state.current];
   const correct = given === q.answer;
+  const timeTaken = Date.now() - state.qStart;
 
   state.answers.push({ correct, given, expected: q.answer, time: timeTaken });
 
-  // Visual feedback
-  const card = document.getElementById('question-card');
-  const fb = document.getElementById('feedback-msg');
-  const ans = document.getElementById('eq-answer');
+  const card = $('q-card');
+  const fb   = $('feedback');
+  const ans  = $('eq-answer');
+  const wrap = $('eq-answer-wrap');
   ans.textContent = given;
 
   if (correct) {
-    card.classList.add('correct');
-    ans.classList.add('correct');
-    fb.textContent = randomCorrect();
-    fb.className = 'feedback-msg correct';
+    state.combo++;
+    if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+    const bonusIdx = Math.min(state.combo, XP_COMBO_BONUS.length-1);
+    const xpEarned = XP_PER_CORRECT + (XP_COMBO_BONUS[bonusIdx]||0);
+    state.sessionXP += xpEarned;
+
+    card.className = 'q-card pop-correct';
+    ans.className  = 'eq-answer correct';
+    wrap.className = 'eq-answer-wrap correct';
+    fb.textContent = correctMsg(state.combo);
+    fb.className   = 'feedback correct';
+    showCombo(state.combo);
   } else {
-    card.classList.add('wrong');
-    ans.classList.add('wrong');
-    fb.textContent = `Nope! Answer is ${q.answer}`;
-    fb.className = 'feedback-msg wrong';
+    state.combo = 0;
+    state.hearts = Math.max(0, state.hearts-1);
+    card.className = 'q-card pop-wrong';
+    ans.className  = 'eq-answer wrong';
+    wrap.className = 'eq-answer-wrap wrong';
+    fb.textContent = `Answer: ${q.answer}`;
+    fb.className   = 'feedback wrong';
+    hideCombo();
+    renderHearts();
   }
 
-  document.querySelector('.numpad-submit').disabled = true;
-  updateScoreBar();
+  $('nk-go').disabled = true;
+  updateStatRow();
 
-  state.feedbackTimeout = setTimeout(() => {
+  state.feedbackTO = setTimeout(() => {
     state.current++;
-    if (state.current >= 20) {
-      endSection();
-    } else {
-      loadQuestion();
-    }
-  }, correct ? 800 : 1400);
+    if (state.current >= 20) endSection();
+    else loadQuestion();
+  }, correct ? 750 : 1350);
 }
 
-function randomCorrect() {
-  const msgs = ['✓ Correct!', '✓ Nice!', '✓ Perfect!', '✓ Great!', '✓ Spot on!'];
-  return msgs[Math.floor(Math.random() * msgs.length)];
+function correctMsg(combo) {
+  if (combo >= 8) return '🔥 UNSTOPPABLE!';
+  if (combo >= 5) return '⚡ On fire! x'+combo;
+  if (combo >= 3) return '✓ Combo x'+combo+'!';
+  const msgs = ['✓ Correct!','✓ Nice!','✓ Perfect!','✓ Great!','✓ Nailed it!'];
+  return msgs[Math.floor(Math.random()*msgs.length)];
 }
 
-// ── Score bar update ──────────────────────────────────────────────────────
-function updateScoreBar() {
+function showCombo(n) {
+  const pill = $('combo-pill');
+  if (n >= 3) {
+    pill.textContent = `🔥 ${n} in a row!`;
+    pill.classList.add('visible');
+  } else {
+    hideCombo();
+  }
+}
+function hideCombo() { $('combo-pill').classList.remove('visible'); }
+
+function renderHearts() {
+  ['h1','h2','h3'].forEach((id,i) => {
+    const el = $(id);
+    if (el) el.className = 'heart' + (i < state.hearts ? '' : ' lost');
+  });
+}
+
+function updateStatRow() {
   const answered = state.answers.length;
-  const correct = state.answers.filter(a => a.correct).length;
-  document.getElementById('live-score').textContent = `${correct} / ${answered}`;
-  document.getElementById('live-accuracy').textContent = answered ? `${Math.round(correct/answered*100)}%` : '—';
-  document.getElementById('q-counter').textContent = `${Math.min(state.current+1,20)} / 20`;
-  document.getElementById('progress-fill').style.width = `${(answered/20)*100}%`;
+  const correct  = state.answers.filter(a=>a.correct).length;
+  const wrong    = answered - correct;
+  const acc      = answered ? Math.round(correct/answered*100) : null;
+  $('s-correct').textContent = correct;
+  $('s-wrong').textContent   = wrong;
+  $('s-acc').textContent     = acc !== null ? acc+'%' : '—';
+  $('s-xp').textContent      = '+'+state.sessionXP;
+}
+
+function updateProgressBar() {
+  const pct = (state.answers.length / 20) * 100;
+  $('p-progress-fill').style.width = pct + '%';
 }
 
 // ── End section ───────────────────────────────────────────────────────────
 function endSection() {
   stopTimer();
-  const elapsed = state.totalElapsed;
-  const correct = state.answers.filter(a => a.correct).length;
-  const accuracy = Math.round(correct / 20 * 100);
-  const avgTime = Math.round(elapsed / 20 / 1000 * 10) / 10;
-  const section = SECTIONS[state.sectionIdx % SECTIONS.length];
+  const correct  = state.answers.filter(a=>a.correct).length;
+  const accuracy = Math.round(correct/20*100);
+  const section  = SECTIONS[state.sectionIdx % SECTIONS.length];
+  if (accuracy === 100) state.sessionXP += XP_PERFECT_BONUS;
 
-  // Save session
   const session = {
-    date: new Date().toISOString(),
-    level: state.level,
+    date:      new Date().toISOString(),
+    level:     state.level,
     levelName: LEVELS[state.level].name,
     section,
-    score: correct,
-    total: 20,
+    score:     correct,
+    total:     20,
     accuracy,
-    timeMs: elapsed,
-    avgTime,
-    answers: state.answers
+    timeMs:    state.totalElapsed,
+    avgTime:   Math.round(state.totalElapsed/20/100)/10,
+    maxCombo:  state.maxCombo,
+    xpEarned:  state.sessionXP,
+    answers:   state.answers,
   };
   saveSession(session);
 
-  // Show results
-  showResults(session);
+  // Update global stats
+  const stats = loadStats();
+  stats.totalXP        = (stats.totalXP||0) + state.sessionXP;
+  stats.totalCorrect   = (stats.totalCorrect||0) + correct;
+  stats.totalSections  = (stats.totalSections||0) + 1;
+  stats.bestCombo      = Math.max(stats.bestCombo||0, state.maxCombo);
+  if (accuracy === 100) stats.hasPerfect = true;
+  if (correct >= 10 && state.current <= 10) stats.hasMini10 = true; // first half perfect
+  if (state.totalElapsed <= 90000) stats.fastestTime = Math.min(stats.fastestTime||Infinity, state.totalElapsed);
+  if (state.level === 4) stats.completedLevel4 = true;
+  stats.dayStreak = stats.dayStreak||1;
+
+  const prevXPLevel = getXPLevel((stats.totalXP||0) - state.sessionXP);
+  const newXPLevel  = getXPLevel(stats.totalXP);
+  saveStats(stats);
+
+  const newBadges = checkAchievements(stats);
+
+  // Level-up modal?
+  if (newXPLevel > prevXPLevel) {
+    showLevelUpModal(newXPLevel);
+  }
+
+  showResults(session, newBadges);
 }
 
-function showResults(session) {
-  document.getElementById('results-trophy').textContent = session.accuracy === 100 ? '🏆' : session.accuracy >= 80 ? '🌟' : session.accuracy >= 60 ? '👍' : '💪';
-  document.getElementById('results-title').textContent =
-    session.accuracy === 100 ? 'Perfect Score!' :
-    session.accuracy >= 80 ? 'Great Work!' :
-    session.accuracy >= 60 ? 'Keep it up!' : 'Keep Practising!';
+// ── Results ────────────────────────────────────────────────────────────────
+function showResults(session, newBadges) {
+  const emojis = { 100:'🏆', 90:'🌟', 80:'🎉', 70:'👍', 60:'💪', 0:'🎯' };
+  const band   = [100,90,80,70,60,0].find(b => session.accuracy >= b);
+  $('trophy-emoji').textContent = emojis[band];
+  $('xp-burst').textContent = '+'+state.sessionXP+' XP';
 
-  document.getElementById('res-score').textContent = `${session.score}/20`;
-  document.getElementById('res-accuracy').textContent = `${session.accuracy}%`;
-  document.getElementById('res-time').textContent = formatTimeFull(session.timeMs);
-  document.getElementById('res-avg').textContent = `${session.avgTime}s`;
+  const headlines = {
+    100: 'Perfect! 🎉',
+    90:  'Excellent!',
+    80:  'Great Job!',
+    70:  'Good Work!',
+    60:  'Keep Going!',
+    0:   'Nice Try!',
+  };
+  $('r-headline').textContent = headlines[band];
+  $('r-sub').textContent      = `Section ${session.section} · Level ${session.level}`;
+  $('r-score').textContent    = `${session.score}/20`;
+  $('r-acc').textContent      = `${session.accuracy}%`;
+  $('r-time').textContent     = fmtTime(session.timeMs);
+  $('r-avg').textContent      = `${session.avgTime}s`;
 
-  // Review
-  const rev = document.getElementById('results-review');
-  rev.innerHTML = '';
-  session.answers.forEach((a, i) => {
-    const q = state.questions[i];
+  // New badges
+  const nb = $('new-badges');
+  nb.innerHTML = '';
+  newBadges.forEach((ach,i) => {
     const div = document.createElement('div');
-    div.className = 'review-item';
-    div.innerHTML = `
-      <span class="review-icon">${a.correct ? '✓' : '✗'}</span>
-      <span class="review-eq">${q.dividend} ÷ ${q.divisor} =</span>
-      <span class="review-answer ${a.correct ? 'correct' : 'wrong'}">${a.given}</span>
-      ${!a.correct ? `<span class="review-correct-ans">(${q.answer})</span>` : ''}
-    `;
-    rev.appendChild(div);
+    div.className = 'new-badge-item';
+    div.style.animationDelay = (i*0.1)+'s';
+    div.innerHTML = `<span class="bi-icon">${ach.icon}</span><span class="bi-name">${ach.name}</span>`;
+    nb.appendChild(div);
   });
 
-  // Confetti if good score
-  if (session.accuracy >= 80) launchConfetti(session.accuracy);
+  // Review
+  const rl = $('review-list');
+  rl.innerHTML = '';
+  session.answers.forEach((a,i) => {
+    const q = state.questions[i];
+    const div = document.createElement('div');
+    div.className = 'review-row';
+    div.innerHTML = `
+      <span class="review-icon">${a.correct?'✓':'✗'}</span>
+      <span class="review-eq">${q.dividend} ÷ ${q.divisor} =</span>
+      <span class="review-ans ${a.correct?'correct':'wrong'}">${a.given}</span>
+      ${!a.correct ? `<span class="review-correct-hint">(${q.answer})</span>` : ''}
+    `;
+    rl.appendChild(div);
+  });
 
+  if (session.accuracy >= 80) launchConfetti(session.accuracy);
   showScreen('results');
+  refreshXPBar();
 }
 
-// ── Confetti ──────────────────────────────────────────────────────────────
-function launchConfetti(score) {
-  const container = document.getElementById('confetti');
-  container.innerHTML = '';
-  const colors = ['#ff6b35','#ffcd3c','#3cffd8','#ff3c6f','#2dff8a','#a78bfa'];
-  const count = score >= 100 ? 60 : 30;
-  for (let i = 0; i < count; i++) {
+// ── Confetti ───────────────────────────────────────────────────────────────
+function launchConfetti(accuracy) {
+  const colors = ['#34c759','#007aff','#ff9500','#ff3b30','#af52de','#ffcc00','#5ac8fa'];
+  const n = accuracy >= 100 ? 60 : 30;
+  const container = document.body;
+  for (let i=0; i<n; i++) {
     const el = document.createElement('div');
-    el.className = 'confetti-piece';
+    const size = 6+Math.random()*8;
     el.style.cssText = `
-      left: ${Math.random() * 100}%;
-      top: ${-10 + Math.random() * -30}px;
-      background: ${colors[Math.floor(Math.random() * colors.length)]};
-      animation-duration: ${1.5 + Math.random() * 1.5}s;
-      animation-delay: ${Math.random() * 0.8}s;
-      width: ${6 + Math.random() * 8}px;
-      height: ${6 + Math.random() * 8}px;
-      border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+      position:fixed; z-index:200; pointer-events:none;
+      left:${Math.random()*100}%;
+      top:${-10+Math.random()*-20}px;
+      width:${size}px; height:${size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:${Math.random()>.5?'50%':'3px'};
+      animation: conffall ${1.4+Math.random()*1.2}s linear ${Math.random()*0.6}s forwards;
     `;
     container.appendChild(el);
-    el.addEventListener('animationend', () => el.remove());
+    el.addEventListener('animationend', ()=>el.remove());
+  }
+  // inject keyframe once
+  if (!document.getElementById('conf-style')) {
+    const s = document.createElement('style');
+    s.id = 'conf-style';
+    s.textContent = `@keyframes conffall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(105vh) rotate(720deg);opacity:0}}`;
+    document.head.appendChild(s);
   }
 }
 
-// ── Numpad input ──────────────────────────────────────────────────────────
-function handleNumpad(val) {
-  if (val === 'C') {
-    state.input = '';
-    document.getElementById('numpad-display').textContent = '_';
-  } else if (val === '✓') {
-    submitAnswer();
-  } else {
-    if (state.input.length >= 3) return;
-    state.input += val;
-    document.getElementById('numpad-display').textContent = state.input;
-  }
+// ── Level-up modal ─────────────────────────────────────────────────────────
+function showLevelUpModal(lvl) {
+  $('modal-lvl').textContent = lvl;
+  $('modal-levelup').style.display = 'flex';
 }
 
 // ── Progress screen ────────────────────────────────────────────────────────
 function renderProgress() {
-  renderTrendChart();
+  renderAchievementsRow();
+  drawChart();
   renderHistory();
   renderBests();
 }
 
-function renderTrendChart() {
-  const sessions = loadSessions();
-  const levelFilter = document.getElementById('chart-level-filter').value;
-  const metric = document.getElementById('chart-metric').value;
-  const empty = document.getElementById('chart-empty');
-  const canvas = document.getElementById('trend-chart');
+function drawChart() {
+  const sessions  = loadSessions();
+  const lvlFilter = $('c-level').value;
+  const metric    = $('c-metric').value;
+  const canvas    = $('trend-chart');
+  const empty     = $('chart-empty');
 
   let data = sessions;
-  if (levelFilter !== 'all') data = data.filter(s => String(s.level) === levelFilter);
+  if (lvlFilter !== 'all') data = data.filter(s=>String(s.level)===lvlFilter);
+  if (!data.length) { canvas.style.display='none'; empty.style.display='block'; return; }
+  canvas.style.display='block'; empty.style.display='none';
 
-  if (data.length === 0) {
-    canvas.style.display = 'none';
-    empty.style.display = 'block';
-    return;
-  }
-  canvas.style.display = 'block';
-  empty.style.display = 'none';
-
-  // Canvas drawing
+  const dpr = window.devicePixelRatio||1;
+  const W   = canvas.offsetWidth||320;
+  const H   = 200;
+  canvas.width  = W*dpr;
+  canvas.height = H*dpr;
   const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const W = canvas.offsetWidth || 340;
-  const H = 220;
-  canvas.width = W * dpr;
-  canvas.height = H * dpr;
   ctx.scale(dpr, dpr);
 
-  const pad = { top: 20, right: 20, bottom: 40, left: 44 };
-  const cw = W - pad.left - pad.right;
-  const ch = H - pad.top - pad.bottom;
+  const pad = {t:16, r:16, b:34, l:38};
+  const cw  = W-pad.l-pad.r;
+  const ch  = H-pad.t-pad.b;
 
-  ctx.clearRect(0, 0, W, H);
-
-  // Background
-  ctx.fillStyle = '#0f0f2e';
-  ctx.roundRect(0, 0, W, H, 16);
-  ctx.fill();
-
-  // Values
-  const vals = data.map(s => {
-    if (metric === 'accuracy') return s.accuracy;
-    if (metric === 'time') return Math.round(s.timeMs / 1000);
-    return s.score;
-  });
-
+  const vals = data.map(s => metric==='accuracy'?s.accuracy : metric==='time'?Math.round(s.timeMs/1000) : s.score);
   const minV = Math.min(...vals);
   const maxV = Math.max(...vals);
-  const range = maxV - minV || 1;
+  const span = maxV-minV || 1;
 
-  const getX = i => pad.left + (i / Math.max(data.length - 1, 1)) * cw;
-  const getY = v => pad.top + ch - ((v - minV) / range) * ch;
+  const gx = i => pad.l + (i/Math.max(data.length-1,1))*cw;
+  const gy = v => pad.t + ch - ((v-minV)/span)*ch;
 
-  // Grid lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = pad.top + (i / 4) * ch;
-    ctx.beginPath();
-    ctx.moveTo(pad.left, y);
-    ctx.lineTo(W - pad.right, y);
-    ctx.stroke();
-    const lv = maxV - (i / 4) * range;
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.font = '10px Space Mono, monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(Math.round(lv), pad.left - 6, y + 4);
+  ctx.clearRect(0,0,W,H);
+
+  // Grid
+  for (let i=0; i<=4; i++) {
+    const y = pad.t+(i/4)*ch;
+    ctx.strokeStyle='rgba(0,0,0,0.06)';
+    ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
+    const v = Math.round(maxV-(i/4)*span);
+    ctx.fillStyle='#8e8e93'; ctx.font=`600 10px Nunito,sans-serif`; ctx.textAlign='right';
+    ctx.fillText(v, pad.l-5, y+4);
   }
 
   // Gradient fill
-  if (data.length > 1) {
-    const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch);
-    grad.addColorStop(0, 'rgba(255,107,53,0.35)');
-    grad.addColorStop(1, 'rgba(255,107,53,0)');
+  if (data.length>1) {
+    const grad = ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
+    grad.addColorStop(0,'rgba(0,122,255,0.18)');
+    grad.addColorStop(1,'rgba(0,122,255,0)');
     ctx.beginPath();
-    ctx.moveTo(getX(0), getY(vals[0]));
-    for (let i = 1; i < vals.length; i++) {
-      const xc = (getX(i - 1) + getX(i)) / 2;
-      const yc = (getY(vals[i - 1]) + getY(vals[i])) / 2;
-      ctx.quadraticCurveTo(getX(i - 1), getY(vals[i - 1]), xc, yc);
+    ctx.moveTo(gx(0), gy(vals[0]));
+    for (let i=1; i<vals.length; i++) {
+      const xc=(gx(i-1)+gx(i))/2, yc=(gy(vals[i-1])+gy(vals[i]))/2;
+      ctx.quadraticCurveTo(gx(i-1),gy(vals[i-1]),xc,yc);
     }
-    ctx.lineTo(getX(vals.length - 1), getY(vals[vals.length - 1]));
-    ctx.lineTo(getX(vals.length - 1), pad.top + ch);
-    ctx.lineTo(getX(0), pad.top + ch);
+    ctx.lineTo(gx(vals.length-1),gy(vals[vals.length-1]));
+    ctx.lineTo(gx(vals.length-1),pad.t+ch);
+    ctx.lineTo(gx(0),pad.t+ch);
     ctx.closePath();
-    ctx.fillStyle = grad;
-    ctx.fill();
+    ctx.fillStyle=grad; ctx.fill();
   }
 
   // Line
-  ctx.beginPath();
-  ctx.strokeStyle = '#ff6b35';
-  ctx.lineWidth = 2.5;
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
-  ctx.moveTo(getX(0), getY(vals[0]));
-  for (let i = 1; i < vals.length; i++) {
-    const xc = (getX(i - 1) + getX(i)) / 2;
-    const yc = (getY(vals[i - 1]) + getY(vals[i])) / 2;
-    ctx.quadraticCurveTo(getX(i - 1), getY(vals[i - 1]), xc, yc);
+  ctx.beginPath(); ctx.strokeStyle='#007aff'; ctx.lineWidth=2.5;
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.moveTo(gx(0),gy(vals[0]));
+  for (let i=1; i<vals.length; i++) {
+    const xc=(gx(i-1)+gx(i))/2, yc=(gy(vals[i-1])+gy(vals[i]))/2;
+    ctx.quadraticCurveTo(gx(i-1),gy(vals[i-1]),xc,yc);
   }
-  ctx.lineTo(getX(vals.length - 1), getY(vals[vals.length - 1]));
+  ctx.lineTo(gx(vals.length-1),gy(vals[vals.length-1]));
   ctx.stroke();
 
-  // Dots + labels
-  data.forEach((s, i) => {
-    const x = getX(i), y = getY(vals[i]);
-    ctx.beginPath();
-    ctx.arc(x, y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = '#ff6b35';
-    ctx.fill();
-    ctx.strokeStyle = '#07071a';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+  // Dots
+  data.forEach((s,i) => {
+    const x=gx(i), y=gy(vals[i]);
+    ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
+    ctx.fillStyle='#007aff'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
 
-    // x-axis date
-    const d = new Date(s.date);
-    const label = `${d.getMonth()+1}/${d.getDate()}`;
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.font = '9px Space Mono, monospace';
-    ctx.textAlign = 'center';
-    if (data.length <= 10 || i % Math.ceil(data.length / 8) === 0) {
-      ctx.fillText(label, x, H - 8);
+    if (data.length<=10 || i%Math.ceil(data.length/7)===0) {
+      const d=new Date(s.date);
+      const lbl=`${d.getMonth()+1}/${d.getDate()}`;
+      ctx.fillStyle='#aeaeb2'; ctx.font=`600 9px Nunito,sans-serif`; ctx.textAlign='center';
+      ctx.fillText(lbl, x, H-6);
     }
   });
-
-  // Metric label
-  const labels = { accuracy: 'Accuracy %', time: 'Time (sec)', score: 'Score / 20' };
-  ctx.fillStyle = 'rgba(255,107,53,0.6)';
-  ctx.font = '10px Syne, sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText(labels[metric], pad.left, H - 8);
 }
 
 function renderHistory() {
-  const sessions = loadSessions().reverse();
-  const list = document.getElementById('history-list');
-  const empty = document.getElementById('history-empty');
+  const sessions = loadSessions().slice().reverse();
+  const list  = $('hist-list');
+  const empty = $('hist-empty');
   list.innerHTML = '';
-  if (!sessions.length) { empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
+  if (!sessions.length) { empty.style.display='block'; return; }
+  empty.style.display='none';
   sessions.forEach(s => {
-    const d = new Date(s.date);
-    const dateStr = d.toLocaleDateString(undefined, { month:'short', day:'numeric' });
-    const timeStr = d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
+    const d   = new Date(s.date);
     const div = document.createElement('div');
-    div.className = 'history-item';
+    div.className = 'hist-item';
     div.innerHTML = `
-      <div class="hi-badge">L${s.level}·${s.section}</div>
-      <div class="hi-info">
-        <div class="hi-title">${s.levelName} — Section ${s.section}</div>
-        <div class="hi-sub">${dateStr} ${timeStr} · ${formatTimeFull(s.timeMs)}</div>
+      <div class="hi-circle lv${s.level}">${LEVELS[s.level].emoji}</div>
+      <div class="hi-body">
+        <div class="hi-title">${s.levelName} · Section ${s.section}</div>
+        <div class="hi-sub">${d.toLocaleDateString(undefined,{month:'short',day:'numeric'})} ${d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})} · ${fmtTime(s.timeMs)}</div>
       </div>
       <div class="hi-score">${s.accuracy}%</div>
     `;
@@ -461,113 +586,132 @@ function renderHistory() {
 
 function renderBests() {
   const sessions = loadSessions();
-  const grid = document.getElementById('bests-grid');
-  const empty = document.getElementById('bests-empty');
+  const grid  = $('bests-grid');
+  const empty = $('bests-empty');
   grid.innerHTML = '';
-  if (!sessions.length) { empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
+  if (!sessions.length) { empty.style.display='block'; return; }
+  empty.style.display='none';
 
   [1,2,3,4].forEach(lvl => {
-    const lvlSessions = sessions.filter(s => s.level === lvl);
-    if (!lvlSessions.length) return;
+    const ls = sessions.filter(s=>s.level===lvl);
+    if (!ls.length) return;
+    const bestA = ls.reduce((a,b)=>b.accuracy>a.accuracy?b:a);
+    const bestT = ls.reduce((a,b)=>b.timeMs<a.timeMs?b:a);
 
-    const bestAcc = lvlSessions.reduce((a,b) => b.accuracy > a.accuracy ? b : a);
-    const bestTime = lvlSessions.reduce((a,b) => b.timeMs < a.timeMs ? b : a);
-
-    const acc = document.createElement('div');
-    acc.className = 'best-card';
-    acc.innerHTML = `
-      <div class="best-level">Level ${lvl} · Best Accuracy</div>
-      <div class="best-title">${LEVELS[lvl].name}</div>
-      <div class="best-val">${bestAcc.accuracy}%</div>
-      <div class="best-sub">${new Date(bestAcc.date).toLocaleDateString()}</div>
+    grid.innerHTML += `
+      <div class="best-card">
+        <div class="bc-icon">${LEVELS[lvl].emoji}</div>
+        <div class="bc-val">${bestA.accuracy}%</div>
+        <div class="bc-label">Lv${lvl} Best Acc</div>
+        <div class="bc-sub">${new Date(bestA.date).toLocaleDateString()}</div>
+      </div>
+      <div class="best-card">
+        <div class="bc-icon">⚡</div>
+        <div class="bc-val">${fmtTime(bestT.timeMs)}</div>
+        <div class="bc-label">Lv${lvl} Fastest</div>
+        <div class="bc-sub">${bestT.accuracy}% acc</div>
+      </div>
     `;
-    const spd = document.createElement('div');
-    spd.className = 'best-card';
-    spd.innerHTML = `
-      <div class="best-level">Level ${lvl} · Fastest</div>
-      <div class="best-title">${LEVELS[lvl].name}</div>
-      <div class="best-val">${formatTimeFull(bestTime.timeMs)}</div>
-      <div class="best-sub">${bestTime.accuracy}% accurate</div>
-    `;
-    grid.appendChild(acc);
-    grid.appendChild(spd);
   });
 }
 
-// ── Event listeners ────────────────────────────────────────────────────────
-document.querySelectorAll('.level-card').forEach(card => {
+// ── Utility ────────────────────────────────────────────────────────────────
+function $(id) { return document.getElementById(id); }
+
+// ── Event wiring ───────────────────────────────────────────────────────────
+// Level cards
+document.querySelectorAll('.lcard').forEach(card => {
   card.addEventListener('click', () => {
-    document.querySelectorAll('.level-card').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('.lcard').forEach(c=>c.classList.remove('selected'));
     card.classList.add('selected');
     state.level = parseInt(card.dataset.level);
   });
 });
-// Default select
-document.querySelector('.level-card[data-level="1"]').classList.add('selected');
 
-document.getElementById('btn-start').addEventListener('click', () => startPractice());
-
-document.getElementById('btn-progress').addEventListener('click', () => {
-  renderProgress();
-  showScreen('progress');
-});
-
-document.getElementById('btn-back-home').addEventListener('click', () => {
+$('btn-start').addEventListener('click', () => startPractice());
+$('btn-progress-icon').addEventListener('click', () => { renderProgress(); showScreen('progress'); });
+$('btn-back-home').addEventListener('click', () => {
   stopTimer();
-  if (state.feedbackTimeout) clearTimeout(state.feedbackTimeout);
+  if (state.feedbackTO) clearTimeout(state.feedbackTO);
   showScreen('home');
 });
 
-document.getElementById('btn-back-progress').addEventListener('click', () => showScreen('home'));
-
 // Numpad
-document.querySelectorAll('.numpad-btn').forEach(btn => {
-  btn.addEventListener('click', () => handleNumpad(btn.dataset.val));
-  btn.addEventListener('touchstart', e => { e.preventDefault(); handleNumpad(btn.dataset.val); }, { passive: false });
+document.querySelectorAll('.nk').forEach(btn => {
+  const fire = () => {
+    const v = btn.dataset.v;
+    if (v==='C') {
+      state.input='';
+      $('numpad-display').textContent='_';
+    } else if (v==='GO') {
+      submitAnswer();
+    } else {
+      if (state.input.length>=3) return;
+      state.input += v;
+      $('numpad-display').textContent=state.input;
+    }
+  };
+  btn.addEventListener('click', fire);
+  btn.addEventListener('touchstart', e=>{ e.preventDefault(); fire(); }, { passive:false });
 });
 
-// Results actions
-document.getElementById('btn-retry').addEventListener('click', () => startPractice());
-document.getElementById('btn-next-section').addEventListener('click', () => {
-  state.sectionIdx++;
-  startPractice();
-});
-document.getElementById('btn-results-home').addEventListener('click', () => showScreen('home'));
-
-// Chart controls
-document.getElementById('chart-level-filter').addEventListener('change', renderTrendChart);
-document.getElementById('chart-metric').addEventListener('change', renderTrendChart);
-
-// Progress tabs
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
-    if (tab.dataset.tab === 'chart') renderTrendChart();
-  });
+// Results
+$('btn-retry').addEventListener('click', () => startPractice());
+$('btn-next-section').addEventListener('click', () => { state.sectionIdx++; startPractice(); });
+$('btn-results-home').addEventListener('click', () => { refreshXPBar(); renderAchievementsRow(); showScreen('home'); });
+$('review-toggle').addEventListener('click', () => {
+  const rl=$('review-list');
+  const hidden=rl.style.display==='none';
+  rl.style.display=hidden?'flex':'none';
+  $('review-toggle').textContent=hidden?'Hide ▴':'Show ▾';
 });
 
-document.getElementById('btn-clear-data').addEventListener('click', () => {
-  if (confirm('Clear all session data? This cannot be undone.')) {
+// Progress
+$('btn-back-progress').addEventListener('click', () => showScreen('home'));
+$('btn-clear-data').addEventListener('click', () => {
+  if (confirm('Clear all data? This cannot be undone.')) {
     clearSessions();
+    localStorage.removeItem(STATS_KEY);
+    localStorage.removeItem(ACH_KEY);
     renderProgress();
+    refreshXPBar();
+    $('streak-count').textContent='0';
   }
 });
+$('btn-dismiss-levelup').addEventListener('click', () => {
+  $('modal-levelup').style.display='none';
+});
+document.querySelectorAll('.seg').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.seg').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.seg-content').forEach(c=>c.classList.remove('active'));
+    btn.classList.add('active');
+    $(`seg-${btn.dataset.tab}`).classList.add('active');
+    if (btn.dataset.tab==='trend') drawChart();
+  });
+});
+$('c-level').addEventListener('change', drawChart);
+$('c-metric').addEventListener('change', drawChart);
 
-// Keyboard support
+// Keyboard fallback
 document.addEventListener('keydown', e => {
   if (state.screen !== 'practice') return;
-  if (e.key >= '0' && e.key <= '9') handleNumpad(e.key);
-  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); submitAnswer(); }
-  if (e.key === 'Backspace' || e.key === 'Delete') handleNumpad('C');
+  if (e.key>='0'&&e.key<='9') {
+    if (state.input.length<3) { state.input+=e.key; $('numpad-display').textContent=state.input; }
+  }
+  if (e.key==='Enter') { e.preventDefault(); submitAnswer(); }
+  if (e.key==='Backspace') { state.input=''; $('numpad-display').textContent='_'; }
 });
 
-// Register SW
+// SW
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
+
+// ── Init ───────────────────────────────────────────────────────────────────
+(function init() {
+  refreshXPBar();
+  renderAchievementsRow();
+  const stats = loadStats();
+  $('streak-count').textContent = stats.dayStreak||0;
+})();
