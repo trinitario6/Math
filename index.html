@@ -565,6 +565,191 @@ canvas{width:100%;height:auto;display:block}
 ::-webkit-scrollbar{width:3px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:#c7c7cc;border-radius:3px}
+
+/* ══════════════════════════════
+   PROFILE PICKER SCREEN
+══════════════════════════════ */
+#screen-profiles{background:#f2f2f7}
+.profiles-inner{
+  position:relative;z-index:1;
+  padding:max(env(safe-area-inset-top,28px),28px) 20px 0;
+  display:flex;flex-direction:column;align-items:center;gap:0;
+}
+.profiles-title{
+  font-size:26px;font-weight:900;color:#1c1c1e;
+  margin-bottom:4px;text-align:center;
+}
+.profiles-sub{
+  font-size:14px;font-weight:600;color:#8e8e93;
+  margin-bottom:28px;text-align:center;
+}
+.profiles-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:12px;width:100%;margin-bottom:20px;
+}
+.profile-tile{
+  background:#fff;border:2px solid rgba(0,0,0,.06);
+  border-radius:20px;padding:18px 12px 14px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  cursor:pointer;position:relative;
+  box-shadow:0 2px 12px rgba(0,0,0,.07);
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1),
+             border-color .18s,box-shadow .18s;
+  -webkit-user-select:none;user-select:none;
+}
+.profile-tile:active{transform:scale(.95)}
+.profile-tile.active-profile{
+  border-color:#007aff;
+  box-shadow:0 0 0 4px rgba(0,122,255,.12),0 4px 16px rgba(0,0,0,.09);
+}
+.profile-avatar{
+  width:64px;height:64px;border-radius:50%;
+  background:linear-gradient(135deg,#d4e8ff,#eed6f7);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;overflow:hidden;flex-shrink:0;
+  border:2px solid rgba(0,0,0,.06);
+  position:relative;
+}
+.profile-avatar img{
+  width:100%;height:100%;object-fit:cover;
+  border-radius:50%;display:block;
+}
+.profile-avatar-placeholder{font-size:28px;line-height:1}
+.profile-name-text{
+  font-size:14px;font-weight:800;color:#1c1c1e;
+  text-align:center;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.profile-xp-badge{
+  font-size:11px;font-weight:700;color:#8e8e93;
+  background:#f2f2f7;padding:3px 8px;border-radius:99px;
+}
+.profile-delete-btn{
+  position:absolute;top:8px;right:8px;
+  width:22px;height:22px;border-radius:50%;
+  background:#ff3b30;color:#fff;
+  border:none;font-size:13px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .15s;
+  font-weight:900;line-height:1;
+}
+.profile-tile:hover .profile-delete-btn,
+.profile-tile.show-delete .profile-delete-btn{opacity:1}
+
+.add-profile-btn{
+  width:100%;padding:15px 0;
+  background:#fff;border:2px dashed #c7c7cc;
+  border-radius:20px;cursor:pointer;
+  font-family:inherit;font-size:15px;font-weight:800;color:#8e8e93;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:border-color .15s,color .15s,background .15s;
+  margin-bottom:16px;
+}
+.add-profile-btn:active{background:#f2f2f7;border-color:#007aff;color:#007aff}
+
+/* ── Profile Edit Modal ── */
+.pedit-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.4);backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  display:flex;align-items:flex-end;justify-content:center;
+  padding:0;
+}
+.pedit-sheet{
+  background:#fff;
+  border-radius:28px 28px 0 0;
+  padding:24px 20px max(env(safe-area-inset-bottom,20px),20px);
+  width:100%;max-width:500px;
+  animation:sheet-up .3s cubic-bezier(.34,1.4,.64,1);
+}
+@keyframes sheet-up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.pedit-handle{
+  width:36px;height:4px;border-radius:2px;
+  background:#e5e5ea;margin:0 auto 20px;
+}
+.pedit-avatar-wrap{
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  margin-bottom:20px;
+}
+.pedit-avatar{
+  width:90px;height:90px;border-radius:50%;
+  background:linear-gradient(135deg,#d4e8ff,#eed6f7);
+  display:flex;align-items:center;justify-content:center;
+  font-size:40px;overflow:hidden;cursor:pointer;
+  border:3px solid rgba(0,0,0,.07);
+  position:relative;
+}
+.pedit-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.pedit-avatar-change{
+  position:absolute;inset:0;border-radius:50%;
+  background:rgba(0,0,0,.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;opacity:0;transition:opacity .15s;
+}
+.pedit-avatar:active .pedit-avatar-change{opacity:1}
+.pedit-photo-hint{font-size:12px;font-weight:700;color:#007aff;cursor:pointer}
+.pedit-label{
+  font-size:12px;font-weight:800;color:#8e8e93;
+  text-transform:uppercase;letter-spacing:.07em;
+  margin-bottom:6px;
+}
+.pedit-input{
+  width:100%;background:#f2f2f7;
+  border:2px solid transparent;border-radius:12px;
+  padding:13px 14px;font-family:inherit;
+  font-size:16px;font-weight:700;color:#1c1c1e;
+  margin-bottom:14px;outline:none;
+  transition:border-color .15s;
+}
+.pedit-input:focus{border-color:#007aff;background:#fff}
+
+.emoji-picker{
+  display:flex;flex-wrap:wrap;gap:8px;
+  margin-bottom:16px;
+}
+.emoji-opt{
+  font-size:22px;width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:10px;cursor:pointer;border:2px solid transparent;
+  transition:border-color .12s,background .12s;
+}
+.emoji-opt.selected{border-color:#007aff;background:#d4e8ff}
+.emoji-opt:active{background:#e5e5ea}
+
+.pedit-actions{display:flex;gap:10px;margin-top:4px}
+.pedit-save{
+  flex:1;padding:15px 0;
+  background:#007aff;color:#fff;
+  font-family:inherit;font-size:16px;font-weight:800;
+  border:none;border-radius:14px;cursor:pointer;
+}
+.pedit-save:active{background:#005ecb}
+.pedit-cancel{
+  padding:15px 18px;
+  background:#f2f2f7;color:#8e8e93;
+  font-family:inherit;font-size:16px;font-weight:800;
+  border:none;border-radius:14px;cursor:pointer;
+}
+.pedit-cancel:active{background:#e5e5ea}
+
+/* Home topbar profile avatar */
+.home-profile-btn{
+  width:38px;height:38px;border-radius:50%;
+  background:linear-gradient(135deg,#d4e8ff,#eed6f7);
+  border:2px solid rgba(0,0,0,.08);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;overflow:hidden;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+  flex-shrink:0;
+  transition:transform .15s;
+}
+.home-profile-btn:active{transform:scale(.88)}
+.home-profile-btn img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.home-profile-name{
+  font-size:13px;font-weight:800;color:#8e8e93;
+  text-align:center;margin-bottom:14px;
+}
+
 </style>
 </head>
 <body>
@@ -578,10 +763,13 @@ canvas{width:100%;height:auto;display:block}
     <div class="home-inner">
 
       <div class="topbar">
-        <div class="streak-pill">🔥 <span id="streak-count">0</span></div>
+        <button class="home-profile-btn" id="btn-switch-profile" title="Switch profile">
+          <span id="home-avatar-display">👤</span>
+        </button>
         <div class="wordmark">Kids Math</div>
         <button class="icon-btn" id="btn-progress-icon">📊</button>
       </div>
+      <div class="home-profile-name">Hi, <span id="home-profile-name">Player</span>! 🔥 <span id="streak-count">0</span> day streak</div>
 
       <div class="xp-card">
         <div class="xp-row">
@@ -823,14 +1011,64 @@ const ACHIEVEMENTS=[
   {id:'10sect',icon:'🎖️',name:'Dedicated',   check:s=>s.totalSections>=10}
 ];
 
-// ── Storage ─────────────────────────────────────────────────────────────────
-const DB='km_sessions';const ST='km_stats';const AK='km_ach';
-const loadSess=()=>{try{return JSON.parse(localStorage.getItem(DB)||'[]')}catch{return[]}};
-const saveSess=s=>{const a=loadSess();a.push(s);localStorage.setItem(DB,JSON.stringify(a))};
-const loadStats=()=>{try{return JSON.parse(localStorage.getItem(ST)||'{}')}catch{return{}}};
-const saveStats=s=>localStorage.setItem(ST,JSON.stringify(s));
-const loadAch=()=>{try{return JSON.parse(localStorage.getItem(AK)||'[]')}catch{return[]}};
-const saveAch=a=>localStorage.setItem(AK,JSON.stringify(a));
+// ══════════════════════════════════════════════════
+// PROFILE SYSTEM — all data namespaced per profile
+// ══════════════════════════════════════════════════
+const PROFILES_KEY = 'km_profiles';
+const ACTIVE_KEY   = 'km_active_profile';
+const AVATAR_EMOJIS = ['😊','🦁','🐯','🐻','🦊','🐸','🐼','🦄','🐶','🐱','🐰','🐨','🦋','🌟','🚀','⚡'];
+
+// Profile CRUD
+function loadProfiles(){
+  try{return JSON.parse(localStorage.getItem(PROFILES_KEY)||'[]')}catch{return[]}
+}
+function saveProfiles(profiles){ localStorage.setItem(PROFILES_KEY,JSON.stringify(profiles)) }
+
+function getActiveProfileId(){
+  return localStorage.getItem(ACTIVE_KEY)||null;
+}
+function setActiveProfileId(id){
+  localStorage.setItem(ACTIVE_KEY, id);
+}
+
+function getActiveProfile(){
+  const id=getActiveProfileId();
+  return loadProfiles().find(p=>p.id===id)||null;
+}
+
+function createProfile(name, emoji, photoDataUrl){
+  const id = 'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  const profile = {id, name, emoji: emoji||'😊', photo: photoDataUrl||null, createdAt: new Date().toISOString()};
+  const profiles = loadProfiles();
+  profiles.push(profile);
+  saveProfiles(profiles);
+  return profile;
+}
+
+function updateProfile(id, updates){
+  const profiles = loadProfiles();
+  const idx = profiles.findIndex(p=>p.id===id);
+  if(idx>=0){ profiles[idx]={...profiles[idx],...updates}; saveProfiles(profiles); }
+}
+
+function deleteProfile(id){
+  const profiles = loadProfiles().filter(p=>p.id!==id);
+  saveProfiles(profiles);
+  // also clear profile data
+  ['_sess','_stats','_ach'].forEach(suffix=>{
+    localStorage.removeItem('km'+suffix+'_'+id);
+  });
+  if(getActiveProfileId()===id) localStorage.removeItem(ACTIVE_KEY);
+}
+
+// Per-profile storage (namespaced with profile id)
+function profileKey(suffix){ return 'km_'+suffix+'_'+getActiveProfileId(); }
+const loadSess=()=>{try{return JSON.parse(localStorage.getItem(profileKey('sess'))||'[]')}catch{return[]}};
+const saveSess=s=>{const a=loadSess();a.push(s);localStorage.setItem(profileKey('sess'),JSON.stringify(a))};
+const loadStats=()=>{try{return JSON.parse(localStorage.getItem(profileKey('stats'))||'{}')}catch{return{}}};
+const saveStats=s=>localStorage.setItem(profileKey('stats'),JSON.stringify(s));
+const loadAch=()=>{try{return JSON.parse(localStorage.getItem(profileKey('ach'))||'[]')}catch{return[]}};
+const saveAch=a=>localStorage.setItem(profileKey('ach'),JSON.stringify(a));
 
 // ── State ────────────────────────────────────────────────────────────────────
 let S={
@@ -1246,17 +1484,20 @@ document.querySelectorAll('.nk').forEach(btn=>{
 
 $('btn-retry').addEventListener('click',()=>startPractice());
 $('btn-next-section').addEventListener('click',()=>{S.sectionIdx++;startPractice();});
-$('btn-results-home').addEventListener('click',()=>{refreshXPBar();renderAchRow();showScreen('home');});
+$('btn-results-home').addEventListener('click',()=>{refreshHomeProfile();refreshXPBar();renderAchRow();const _s=loadStats();$('streak-count').textContent=_s.dayStreak||0;showScreen('home');});
 $('review-toggle').addEventListener('click',()=>{
   const rl=$('review-list');const open=rl.classList.toggle('open');
   $('review-toggle').textContent=open?'Hide ▴':'Show ▾';
 });
 $('btn-back-progress').addEventListener('click',()=>showScreen('home'));
 $('btn-clear').addEventListener('click',()=>{
-  if(confirm('Clear all data?')){
-    localStorage.removeItem('km_sessions');
-    localStorage.removeItem('km_stats');
-    localStorage.removeItem('km_achievements');
+  const p = getActiveProfile();
+  const name = p ? p.name : 'this player';
+  if(confirm('Clear all data for '+name+'?')){
+    const pid = getActiveProfileId();
+    localStorage.removeItem('km_sess_'+pid);
+    localStorage.removeItem('km_stats_'+pid);
+    localStorage.removeItem('km_ach_'+pid);
     renderProgress();refreshXPBar();$('streak-count').textContent='0';
   }
 });
@@ -1287,10 +1528,321 @@ if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
 
+// ══════════════════════════════════════════════════
+// PROFILE UI FUNCTIONS
+// ══════════════════════════════════════════════════
+
+// Render the avatar element (img or emoji) into a container
+function renderAvatarInto(container, profile){
+  container.innerHTML = '';
+  if(profile && profile.photo){
+    const img = document.createElement('img');
+    img.src = profile.photo;
+    img.alt = profile.name;
+    container.appendChild(img);
+  } else {
+    const span = document.createElement('span');
+    span.textContent = (profile && profile.emoji) ? profile.emoji : '👤';
+    container.appendChild(span);
+  }
+}
+
+// Update the home screen topbar avatar + name
+function refreshHomeProfile(){
+  const p = getActiveProfile();
+  const avatarBtn = $('btn-switch-profile');
+  if(p){
+    avatarBtn.innerHTML = '';
+    if(p.photo){
+      const img = document.createElement('img');
+      img.src = p.photo;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+      avatarBtn.appendChild(img);
+    } else {
+      avatarBtn.textContent = p.emoji||'👤';
+    }
+    $('home-profile-name').textContent = p.name||'Player';
+  } else {
+    avatarBtn.textContent = '👤';
+    $('home-profile-name').textContent = 'Player';
+  }
+}
+
+// Render the profile picker grid
+function renderProfilesScreen(){
+  const profiles = loadProfiles();
+  const activeId = getActiveProfileId();
+  const grid = $('profiles-grid');
+  grid.innerHTML = '';
+
+  profiles.forEach(p => {
+    const tile = document.createElement('div');
+    tile.className = 'profile-tile' + (p.id===activeId?' active-profile':'');
+    tile.dataset.id = p.id;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'profile-avatar';
+    renderAvatarInto(avatar, p);
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'profile-name-text';
+    nameEl.textContent = p.name||'Player';
+
+    // XP badge
+    const xpEl = document.createElement('div');
+    xpEl.className = 'profile-xp-badge';
+    try {
+      const pStats = JSON.parse(localStorage.getItem('km_stats_'+p.id)||'{}');
+      xpEl.textContent = '⭐ '+(pStats.totalXP||0)+' XP';
+    } catch{ xpEl.textContent = '⭐ 0 XP'; }
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'profile-delete-btn';
+    delBtn.textContent = '×';
+    delBtn.title = 'Delete profile';
+    delBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      if(confirm(`Delete ${p.name}'s profile and all their data?`)){
+        deleteProfile(p.id);
+        renderProfilesScreen();
+        if(loadProfiles().length === 0) showScreen('profiles');
+      }
+    });
+
+    tile.appendChild(avatar);
+    tile.appendChild(nameEl);
+    tile.appendChild(xpEl);
+    tile.appendChild(delBtn);
+
+    tile.addEventListener('click', ()=>{
+      setActiveProfileId(p.id);
+      refreshHomeProfile();
+      refreshXPBar();
+      renderAchRow();
+      const stats = loadStats();
+      $('streak-count').textContent = stats.dayStreak||0;
+      showScreen('home');
+    });
+
+    // Long-press to show delete
+    let pressTimer;
+    tile.addEventListener('touchstart', ()=>{ pressTimer=setTimeout(()=>tile.classList.toggle('show-delete'),600); }, {passive:true});
+    tile.addEventListener('touchend', ()=>clearTimeout(pressTimer), {passive:true});
+
+    grid.appendChild(tile);
+  });
+}
+
+// ── Profile editor state ──────────────────────────────────────────────────────
+let editingProfileId = null; // null = new profile
+let pendingPhoto = null;     // base64 photo from file input
+
+function openProfileEditor(profileId){
+  editingProfileId = profileId||null;
+  pendingPhoto = null;
+
+  // Build emoji picker
+  const picker = $('emoji-picker');
+  picker.innerHTML = '';
+  AVATAR_EMOJIS.forEach(em => {
+    const opt = document.createElement('div');
+    opt.className = 'emoji-opt';
+    opt.textContent = em;
+    opt.addEventListener('click',()=>{
+      picker.querySelectorAll('.emoji-opt').forEach(o=>o.classList.remove('selected'));
+      opt.classList.add('selected');
+      // Clear any pending photo so emoji takes over
+      pendingPhoto = null;
+      $('pedit-avatar-preview').innerHTML = '<span>'+em+'</span><div class="pedit-avatar-change">📷</div>';
+    });
+    picker.appendChild(opt);
+  });
+
+  // Prefill if editing existing
+  if(profileId){
+    const p = loadProfiles().find(x=>x.id===profileId);
+    if(p){
+      $('pedit-name').value = p.name||'';
+      if(p.photo){
+        const img = document.createElement('img');
+        img.src = p.photo;
+        const preview = $('pedit-avatar-preview');
+        preview.innerHTML = '<div class="pedit-avatar-change">📷</div>';
+        preview.insertBefore(img, preview.firstChild);
+      } else {
+        const emojiSpan = p.emoji||'😊';
+        $('pedit-avatar-preview').innerHTML = '<span>'+emojiSpan+'</span><div class="pedit-avatar-change">📷</div>';
+        picker.querySelectorAll('.emoji-opt').forEach(o=>{
+          if(o.textContent===emojiSpan) o.classList.add('selected');
+        });
+      }
+    }
+  } else {
+    $('pedit-name').value = '';
+    $('pedit-avatar-preview').innerHTML = '<span>😊</span><div class="pedit-avatar-change">📷</div>';
+    picker.querySelector('.emoji-opt').classList.add('selected');
+  }
+
+  $('pedit-overlay').style.display = 'flex';
+  setTimeout(()=>$('pedit-name').focus(), 350);
+}
+
+function closeProfileEditor(){
+  $('pedit-overlay').style.display = 'none';
+  pendingPhoto = null;
+  editingProfileId = null;
+}
+
+function saveProfileEditor(){
+  const name = $('pedit-name').value.trim();
+  if(!name){ $('pedit-name').focus(); $('pedit-name').style.borderColor='#ff3b30'; return; }
+  $('pedit-name').style.borderColor='';
+
+  const selectedEmoji = $('emoji-picker').querySelector('.emoji-opt.selected');
+  const emoji = selectedEmoji ? selectedEmoji.textContent : '😊';
+
+  if(editingProfileId){
+    const updates = {name, emoji};
+    if(pendingPhoto) updates.photo = pendingPhoto;
+    else if(!$('pedit-avatar-preview').querySelector('img')) updates.photo = null;
+    updateProfile(editingProfileId, updates);
+  } else {
+    const p = createProfile(name, emoji, pendingPhoto);
+    setActiveProfileId(p.id);
+  }
+
+  closeProfileEditor();
+  renderProfilesScreen();
+  // If we just created first profile, go home
+  if(!editingProfileId || getActiveProfileId()){
+    refreshHomeProfile();
+    refreshXPBar();
+    renderAchRow();
+    const stats = loadStats();
+    $('streak-count').textContent = stats.dayStreak||0;
+    showScreen('home');
+  }
+}
+
+// ── Photo upload ──────────────────────────────────────────────────────────────
+function handlePhotoUpload(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    // Resize to max 200px via canvas to keep localStorage small
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 200;
+      const scale = Math.min(MAX/img.width, MAX/img.height, 1);
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      pendingPhoto = canvas.toDataURL('image/jpeg', 0.82);
+
+      // Show preview in editor
+      const preview = $('pedit-avatar-preview');
+      preview.innerHTML = '<div class="pedit-avatar-change">📷</div>';
+      const previewImg = document.createElement('img');
+      previewImg.src = pendingPhoto;
+      preview.insertBefore(previewImg, preview.firstChild);
+
+      // Deselect emoji
+      $('emoji-picker').querySelectorAll('.emoji-opt').forEach(o=>o.classList.remove('selected'));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Profile-related event listeners ──────────────────────────────────────────
+$('btn-switch-profile').addEventListener('click',()=>{
+  renderProfilesScreen();
+  showScreen('profiles');
+});
+$('btn-add-profile').addEventListener('click',()=>openProfileEditor(null));
+$('pedit-cancel').addEventListener('click',closeProfileEditor);
+$('pedit-save').addEventListener('click',saveProfileEditor);
+$('pedit-overlay').addEventListener('click', e=>{ if(e.target===$('pedit-overlay')) closeProfileEditor(); });
+$('pedit-avatar-preview').addEventListener('click',()=>$('photo-input').click());
+$('pedit-photo-hint').addEventListener('click',()=>$('photo-input').click());
+$('photo-input').addEventListener('change', e=>handlePhotoUpload(e.target.files[0]));
+$('pedit-name').addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDefault();saveProfileEditor();} });
+
+// ══════════════════════════════════════════════════
+// INIT — boot into profile picker or home
+// ══════════════════════════════════════════════════
+
 // Init
-refreshXPBar();renderAchRow();
-const _initStats=loadStats();
-$('streak-count').textContent=_initStats.dayStreak||0;
+(function boot(){
+  const profiles = loadProfiles();
+  const activeId = getActiveProfileId();
+
+  if(profiles.length === 0 || !activeId || !profiles.find(p=>p.id===activeId)){
+    // No profiles yet — show picker (which will prompt to add one)
+    renderProfilesScreen();
+    if(profiles.length === 0){
+      // Immediately open editor for first profile
+      $('screen-profiles').classList.add('active');
+      $('screen-home').classList.remove('active');
+      setTimeout(()=>openProfileEditor(null), 400);
+    } else {
+      showScreen('profiles');
+    }
+  } else {
+    // Valid active profile — go straight to home
+    refreshHomeProfile();
+    refreshXPBar();
+    renderAchRow();
+    const stats = loadStats();
+    $('streak-count').textContent = stats.dayStreak||0;
+    showScreen('home');
+  }
+})();
 </script>
+
+<!-- ══════════════════════════════
+     PROFILE PICKER SCREEN
+══════════════════════════════ -->
+<div id="screen-profiles" class="screen">
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="scroll-wrap">
+    <div class="profiles-inner">
+      <h2 class="profiles-title">Who's playing?</h2>
+      <p class="profiles-sub">Tap your profile to continue</p>
+      <div class="profiles-grid" id="profiles-grid"></div>
+      <button class="add-profile-btn" id="btn-add-profile">
+        <span style="font-size:20px">＋</span> Add Player
+      </button>
+      <div class="safe-gap"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Profile edit bottom sheet -->
+<div class="pedit-overlay" id="pedit-overlay" style="display:none">
+  <div class="pedit-sheet">
+    <div class="pedit-handle"></div>
+    <div class="pedit-avatar-wrap">
+      <div class="pedit-avatar" id="pedit-avatar-preview">
+        <span id="pedit-emoji-preview">😊</span>
+        <div class="pedit-avatar-change">📷</div>
+      </div>
+      <span class="pedit-photo-hint" id="pedit-photo-hint">Upload photo</span>
+    </div>
+    <div class="pedit-label">Name</div>
+    <input class="pedit-input" id="pedit-name" placeholder="Enter name…" maxlength="20"/>
+    <div class="pedit-label">Avatar</div>
+    <div class="emoji-picker" id="emoji-picker"></div>
+    <div class="pedit-actions">
+      <button class="pedit-cancel" id="pedit-cancel">Cancel</button>
+      <button class="pedit-save" id="pedit-save">Save Profile</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden file input for photo upload -->
+<input type="file" id="photo-input" accept="image/*" style="display:none"/>
+
 </body>
 </html>
