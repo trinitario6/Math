@@ -1,107 +1,675 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
-  <meta name="theme-color" content="#f2f2f7"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-  <meta name="apple-mobile-web-app-title" content="Kids Math"/>
-  <title>Kids Math — Division</title>
-  <link rel="manifest" href="manifest.json"/>
-  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="css/style.css"/>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
+<meta name="theme-color" content="#f2f2f7"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Kids Math"/>
+<title>Kids Math — Division</title>
+<link rel="manifest" href="manifest.json"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100%;overflow:hidden;
+  background:#f2f2f7;
+  color:#1c1c1e;
+  font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  -webkit-text-size-adjust:100%;
+}
+
+/* ── Screens ── */
+.screen{
+  position:fixed;inset:0;
+  opacity:0;pointer-events:none;
+  transition:opacity .28s ease,transform .28s ease;
+  transform:translateY(16px);
+}
+.screen.active{opacity:1;pointer-events:all;transform:translateY(0)}
+
+/* ── Scrollable ── */
+.scroll-wrap{
+  position:absolute;inset:0;
+  overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+}
+.safe-gap{height:40px}
+
+/* ── Background blobs ── */
+.blob{
+  position:fixed;border-radius:50%;
+  filter:blur(60px);pointer-events:none;z-index:0;
+}
+.b1{width:300px;height:300px;background:#c8f7d4;top:-80px;right:-60px;opacity:.75}
+.b2{width:260px;height:260px;background:#d4e8ff;bottom:-50px;left:-50px;opacity:.75}
+.b3{width:180px;height:180px;background:#ffe5b4;top:45%;left:50%;transform:translate(-50%,-50%);opacity:.55}
+
+/* ══════════════════════════════
+   HOME SCREEN
+══════════════════════════════ */
+#screen-home{background:#f2f2f7}
+.home-inner{
+  position:relative;z-index:1;
+  padding:max(env(safe-area-inset-top,20px),20px) 16px 0;
+  display:flex;flex-direction:column;gap:0;
+}
+
+/* Top bar */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;
+}
+.streak-pill{
+  display:flex;align-items:center;gap:5px;
+  background:#fff8cc;border:1.5px solid #ffe066;
+  padding:7px 13px;border-radius:99px;
+  font-size:14px;font-weight:800;color:#a07800;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
+}
+.wordmark{font-size:19px;font-weight:900;color:#1c1c1e;letter-spacing:-.3px}
+.icon-btn{
+  background:#fff;border:1.5px solid rgba(0,0,0,.08);
+  border-radius:50%;width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:#3a3a3c;
+  box-shadow:0 2px 8px rgba(0,0,0,.07);
+  font-size:18px;
+  transition:transform .15s;
+}
+.icon-btn:active{transform:scale(.88)}
+
+/* XP bar */
+.xp-card{
+  background:rgba(255,255,255,.85);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(0,0,0,.07);
+  border-radius:18px;padding:14px 16px;
+  margin-bottom:18px;
+  box-shadow:0 2px 12px rgba(0,0,0,.06);
+}
+.xp-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.xp-stars{font-size:14px;font-weight:800;color:#3a3a3c}
+.xp-lvl{
+  background:#fff8cc;color:#a07800;
+  font-size:12px;font-weight:800;
+  padding:3px 10px;border-radius:99px;
+}
+.xp-track{
+  background:#e5e5ea;border-radius:99px;
+  height:10px;overflow:hidden;margin-bottom:5px;
+}
+.xp-fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,#ffcc00,#ff9500);
+  border-radius:99px;
+  transition:width .6s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 0 8px rgba(255,180,0,.5);
+}
+.xp-hint{font-size:11px;color:#aeaeb2;font-weight:600}
+
+/* Section label */
+.sec-label{
+  font-size:12px;font-weight:800;color:#8e8e93;
+  text-transform:uppercase;letter-spacing:.08em;
+  margin-bottom:10px;
+}
+
+/* Level cards */
+.level-list{display:flex;flex-direction:column;gap:9px;margin-bottom:20px}
+.lcard{
+  display:flex;align-items:center;gap:12px;
+  background:rgba(255,255,255,.9);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:2px solid transparent;
+  border-radius:16px;padding:13px 15px;
+  cursor:pointer;
+  box-shadow:0 2px 10px rgba(0,0,0,.06);
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1),
+             border-color .18s,box-shadow .18s;
+  -webkit-user-select:none;user-select:none;
+}
+.lcard:active{transform:scale(.96)}
+.lcard.selected{
+  border-color:#007aff;
+  box-shadow:0 0 0 4px rgba(0,122,255,.12),0 4px 16px rgba(0,0,0,.09);
+}
+.lcard-emo{font-size:28px;flex-shrink:0}
+.lcard-body{flex:1}
+.lcard-name{font-size:15px;font-weight:800;color:#1c1c1e}
+.lcard-desc{font-size:12px;color:#8e8e93;font-weight:600;margin-top:1px}
+.lcard-badge{
+  font-size:11px;font-weight:800;
+  padding:4px 10px;border-radius:99px;
+  text-transform:uppercase;letter-spacing:.04em;flex-shrink:0;
+}
+.lcard-badge.easy  {background:#d1f5db;color:#1a7a32}
+.lcard-badge.med   {background:#fff8cc;color:#a07800}
+.lcard-badge.hard  {background:#ffe5b4;color:#c05500}
+.lcard-badge.exp   {background:#eed6f7;color:#7b2da0}
+
+/* Achievements scroll */
+.ach-scroll{
+  display:flex;gap:9px;overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:4px;margin-bottom:22px;
+  scrollbar-width:none;
+}
+.ach-scroll::-webkit-scrollbar{display:none}
+.ach-tile{
+  flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  background:rgba(255,255,255,.9);
+  border:1px solid rgba(0,0,0,.07);
+  border-radius:14px;padding:11px 13px;
+  box-shadow:0 2px 8px rgba(0,0,0,.05);
+  min-width:66px;
+}
+.ach-tile.locked{opacity:.4;filter:grayscale(.6)}
+.ach-icon{font-size:24px}
+.ach-name{font-size:9px;font-weight:800;color:#8e8e93;text-align:center;max-width:60px;line-height:1.2}
+
+/* CTA */
+.btn-cta{
+  width:100%;padding:17px 0;
+  background:#007aff;color:#fff;
+  font-family:inherit;font-size:17px;font-weight:900;
+  border:none;border-radius:99px;cursor:pointer;
+  box-shadow:0 6px 20px rgba(0,122,255,.35);
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1),box-shadow .15s;
+  letter-spacing:.01em;
+  margin-bottom:12px;
+}
+.btn-cta:active{transform:scale(.95);box-shadow:0 2px 8px rgba(0,122,255,.2)}
+
+/* ══════════════════════════════
+   PRACTICE SCREEN
+══════════════════════════════ */
+#screen-practice{
+  background:#f2f2f7;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+
+.p-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:max(env(safe-area-inset-top,16px),16px) 16px 10px;
+  flex-shrink:0;background:#f2f2f7;
+  position:relative;z-index:1;
+}
+.hearts-row{display:flex;gap:3px}
+.heart{font-size:22px;transition:all .3s}
+.heart.lost{filter:grayscale(1) opacity(.3);transform:scale(.75)}
+.timer-chip{
+  background:#fff;border:1.5px solid #e5e5ea;
+  border-radius:99px;padding:6px 14px;
+  font-size:16px;font-weight:900;color:#3a3a3c;
+  box-shadow:0 2px 8px rgba(0,0,0,.07);
+  min-width:62px;text-align:center;
+  font-variant-numeric:tabular-nums;
+}
+
+.p-prog-bar{
+  height:7px;background:#e5e5ea;
+  margin:0 16px 0;border-radius:99px;overflow:hidden;flex-shrink:0;
+}
+.p-prog-fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,#007aff,#5ac8fa);
+  border-radius:99px;
+  transition:width .4s cubic-bezier(.34,1.56,.64,1);
+}
+
+.stat-row{
+  display:flex;gap:6px;
+  padding:10px 16px;flex-shrink:0;
+}
+.stat-pill{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:4px;
+  padding:7px 4px;border-radius:10px;
+  font-size:13px;font-weight:800;
+}
+.stat-pill strong{font-size:14px;font-weight:900}
+.sp-green{background:#d1f5db;color:#1a7a32}
+.sp-red  {background:#ffd6d4;color:#c0392b}
+.sp-blue {background:#d4e8ff;color:#0055b3}
+.sp-gold {background:#fff8cc;color:#a07800}
+
+/* Question zone */
+.q-zone{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:8px 16px;min-height:0;gap:10px;
+}
+.q-card{
+  background:#fff;
+  border:2px solid rgba(0,0,0,.06);
+  border-radius:24px;padding:24px 20px 18px;
+  width:100%;max-width:360px;text-align:center;
+  box-shadow:0 4px 20px rgba(0,0,0,.08);
+  transition:border-color .22s,box-shadow .22s,transform .22s;
+}
+.q-card.pop-correct{
+  border-color:#34c759;
+  box-shadow:0 0 0 4px #d1f5db,0 4px 20px rgba(0,0,0,.08);
+  animation:pop .3s cubic-bezier(.34,1.8,.64,1);
+}
+.q-card.pop-wrong{
+  border-color:#ff3b30;
+  box-shadow:0 0 0 4px #ffd6d4,0 4px 20px rgba(0,0,0,.08);
+  animation:shake .35s ease;
+}
+@keyframes pop  {0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-9px)}75%{transform:translateX(9px)}}
+
+.q-tag{
+  font-size:11px;font-weight:800;color:#aeaeb2;
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;
+}
+.equation{
+  display:flex;align-items:center;justify-content:center;
+  gap:clamp(6px,2.5vw,14px);flex-wrap:wrap;
+}
+.eq-num{
+  font-size:clamp(46px,13vw,68px);font-weight:900;
+  color:#1c1c1e;line-height:1;letter-spacing:-1px;
+}
+.eq-op{font-size:clamp(28px,8vw,42px);font-weight:700;color:#aeaeb2}
+.eq-box{
+  min-width:clamp(50px,13vw,68px);
+  background:#f2f2f7;border:2.5px dashed #c7c7cc;
+  border-radius:14px;padding:4px 8px;
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .2s,background .2s;
+}
+.eq-box.correct{background:#d1f5db;border-style:solid;border-color:#34c759}
+.eq-box.wrong  {background:#ffd6d4;border-style:solid;border-color:#ff3b30}
+.eq-ans{
+  font-size:clamp(46px,13vw,68px);font-weight:900;
+  color:#007aff;line-height:1;letter-spacing:-1px;
+  transition:color .2s;
+}
+.eq-ans.correct{color:#34c759}
+.eq-ans.wrong  {color:#ff3b30}
+.feedback{
+  min-height:20px;margin-top:10px;
+  font-size:14px;font-weight:800;
+}
+.feedback.correct{color:#34c759}
+.feedback.wrong  {color:#ff3b30}
+
+.combo-pill{
+  background:#fff;border:1.5px solid rgba(0,0,0,.07);
+  border-radius:99px;padding:7px 18px;
+  font-size:14px;font-weight:800;color:#ff9500;
+  box-shadow:0 2px 10px rgba(0,0,0,.08);
+  opacity:0;transform:scale(.8) translateY(4px);
+  transition:opacity .22s,transform .22s cubic-bezier(.34,1.56,.64,1);
+}
+.combo-pill.show{opacity:1;transform:scale(1) translateY(0)}
+
+/* Numpad */
+.numpad-area{
+  flex-shrink:0;padding:4px 14px 8px;
+  display:flex;flex-direction:column;gap:7px;
+  max-width:340px;width:100%;margin:0 auto;
+}
+.num-display{
+  background:#fff;border:2.5px solid #007aff;
+  border-radius:14px;padding:10px 14px;
+  font-size:28px;font-weight:900;
+  color:#007aff;text-align:center;
+  min-height:52px;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 3px rgba(0,122,255,.1);
+  letter-spacing:.05em;
+}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.nk{
+  background:#fff;
+  border:1.5px solid rgba(0,0,0,.08);
+  border-bottom:3.5px solid rgba(0,0,0,.12);
+  border-radius:14px;padding:15px 8px;
+  font-family:inherit;font-size:22px;font-weight:800;
+  color:#1c1c1e;cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.06);
+  transition:transform .12s cubic-bezier(.34,1.8,.64,1),
+             background .1s,box-shadow .1s;
+  -webkit-user-select:none;user-select:none;
+  -webkit-appearance:none;appearance:none;
+}
+.nk:active{
+  transform:scale(.9) translateY(2px);
+  box-shadow:none;border-bottom-width:1.5px;
+}
+.nk-del{background:#ffd6d4;color:#ff3b30;border-color:rgba(255,59,48,.2);border-bottom-color:rgba(255,59,48,.3)}
+.nk-go{
+  background:#34c759;color:#fff;
+  border-color:transparent;border-bottom-color:#1da048;
+  font-size:22px;
+  box-shadow:0 4px 14px rgba(52,199,89,.35);
+}
+.nk-go:active{background:#28a745}
+.nk-go:disabled{opacity:.4;cursor:not-allowed}
+
+/* ══════════════════════════════
+   RESULTS SCREEN
+══════════════════════════════ */
+#screen-results{background:#f2f2f7}
+.results-inner{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:center;
+  padding:max(env(safe-area-inset-top,24px),24px) 16px 0;
+  gap:14px;
+}
+.trophy-wrap{position:relative;margin-top:8px}
+.trophy-ring{
+  width:110px;height:110px;border-radius:50%;
+  background:linear-gradient(135deg,#fff8cc,#ffe5b4);
+  border:3px solid #ffcc00;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 24px rgba(255,204,0,.3);
+  animation:trophy-in .5s cubic-bezier(.34,1.8,.64,1) .1s both;
+}
+@keyframes trophy-in{from{transform:scale(0) rotate(-20deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.trophy-emo{font-size:52px}
+.xp-burst{
+  position:absolute;top:-4px;right:-12px;
+  background:#ffcc00;color:#fff;
+  font-size:13px;font-weight:900;
+  padding:4px 10px;border-radius:99px;
+  box-shadow:0 2px 8px rgba(255,204,0,.4);
+  animation:burst .4s cubic-bezier(.34,1.8,.64,1) .5s both;
+}
+@keyframes burst{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.r-headline{font-size:28px;font-weight:900;color:#1c1c1e}
+.r-sub{font-size:14px;font-weight:700;color:#8e8e93}
+.r-stats{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:9px;width:100%;
+}
+.r-stat{
+  background:#fff;border-radius:18px;padding:14px;
+  text-align:center;
+  box-shadow:0 2px 10px rgba(0,0,0,.06);
+  border:1.5px solid rgba(0,0,0,.05);
+}
+.r-stat.green {border-top:3px solid #34c759}
+.r-stat.blue  {border-top:3px solid #007aff}
+.r-stat.orange{border-top:3px solid #ff9500}
+.r-stat.purple{border-top:3px solid #af52de}
+.rsv{font-size:22px;font-weight:900;color:#1c1c1e}
+.rsl{font-size:10px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+
+.new-badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.nbadge{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  background:#fff8cc;border:1.5px solid #ffe066;
+  border-radius:14px;padding:9px 14px;
+  animation:badge-pop .4s cubic-bezier(.34,1.8,.64,1) both;
+}
+@keyframes badge-pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.nb-icon{font-size:26px}
+.nb-name{font-size:10px;font-weight:800;color:#a07800}
+
+.review-hdr{
+  width:100%;display:flex;justify-content:space-between;align-items:center;
+  padding:0 2px;
+}
+.review-title{font-size:14px;font-weight:800;color:#3a3a3c}
+.review-toggle-btn{
+  background:none;border:none;font-family:inherit;
+  font-size:13px;font-weight:700;color:#007aff;cursor:pointer;padding:4px;
+}
+.review-list{
+  width:100%;display:none;flex-direction:column;gap:5px;
+  max-height:240px;overflow-y:auto;
+}
+.review-list.open{display:flex}
+.rev-row{
+  display:flex;align-items:center;gap:9px;
+  background:#fff;border:1px solid rgba(0,0,0,.06);
+  border-radius:10px;padding:9px 12px;
+  font-size:13px;font-weight:700;
+}
+.rev-eq{flex:1;color:#8e8e93}
+.rev-ans{font-weight:900}
+.rev-ans.correct{color:#34c759}
+.rev-ans.wrong  {color:#ff3b30}
+.rev-hint{font-size:10px;color:#aeaeb2}
+
+.r-actions{display:flex;flex-direction:column;align-items:center;gap:9px;width:100%}
+.btn-outline{
+  width:100%;padding:15px 0;
+  background:transparent;border:2px solid #007aff;color:#007aff;
+  font-family:inherit;font-size:16px;font-weight:800;
+  border-radius:99px;cursor:pointer;
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1),background .15s;
+}
+.btn-outline:active{transform:scale(.95);background:#d4e8ff}
+.btn-ghost{
+  background:none;border:none;font-family:inherit;
+  font-size:14px;font-weight:700;color:#8e8e93;cursor:pointer;padding:8px;
+}
+.btn-ghost:active{color:#1c1c1e}
+
+/* ══════════════════════════════
+   PROGRESS SCREEN
+══════════════════════════════ */
+#screen-progress{background:#f2f2f7;display:flex;flex-direction:column;overflow:hidden}
+.prog-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:max(env(safe-area-inset-top,16px),16px) 16px 12px;
+  flex-shrink:0;background:#f2f2f7;
+}
+.prog-title{font-size:17px;font-weight:900;color:#1c1c1e}
+.btn-red-txt{
+  background:none;border:none;font-family:inherit;
+  font-size:14px;font-weight:700;color:#ff3b30;cursor:pointer;
+}
+
+/* Segmented control */
+.seg-ctrl{
+  display:flex;gap:3px;
+  background:#e5e5ea;border-radius:11px;padding:3px;
+  margin:0 16px 14px;flex-shrink:0;
+}
+.seg-btn{
+  flex:1;padding:8px;border:none;cursor:pointer;
+  font-family:inherit;font-size:14px;font-weight:700;
+  color:#6c6c70;background:transparent;border-radius:8px;
+  transition:background .16s,color .16s,box-shadow .16s;
+}
+.seg-btn.active{
+  background:#fff;color:#1c1c1e;
+  box-shadow:0 1px 4px rgba(0,0,0,.1);
+}
+
+.prog-body{flex:1;overflow:hidden}
+.seg-panel{display:none;height:100%;overflow-y:auto;padding:0 16px 16px}
+.seg-panel.active{display:block}
+
+.filter-row{display:flex;gap:8px;margin-bottom:12px}
+select{
+  flex:1;background:#fff;
+  border:1.5px solid rgba(0,0,0,.08);border-radius:10px;
+  color:#1c1c1e;font-family:inherit;font-size:13px;font-weight:700;
+  padding:9px 12px;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.05);
+  -webkit-appearance:none;appearance:none;
+}
+.chart-card{
+  background:#fff;border:1px solid rgba(0,0,0,.06);
+  border-radius:18px;padding:12px;
+  box-shadow:0 2px 10px rgba(0,0,0,.06);
+}
+canvas{width:100%;height:auto;display:block}
+.empty-msg{
+  text-align:center;color:#8e8e93;
+  padding:36px 20px;font-size:14px;font-weight:700;
+}
+
+/* History */
+.hist-list{display:flex;flex-direction:column;gap:8px}
+.hist-item{
+  display:flex;align-items:center;gap:11px;
+  background:#fff;border:1px solid rgba(0,0,0,.06);
+  border-radius:14px;padding:12px 14px;
+  box-shadow:0 2px 8px rgba(0,0,0,.05);
+}
+.hi-circle{
+  width:40px;height:40px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;
+}
+.hi-body{flex:1}
+.hi-title{font-size:14px;font-weight:800;color:#1c1c1e}
+.hi-sub{font-size:12px;font-weight:600;color:#8e8e93;margin-top:1px}
+.hi-score{font-size:18px;font-weight:900;color:#007aff}
+
+/* Bests */
+.bests-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.best-card{
+  background:#fff;border:1px solid rgba(0,0,0,.06);
+  border-radius:16px;padding:14px;
+  text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.05);
+}
+.bc-ico{font-size:26px;margin-bottom:3px}
+.bc-val{font-size:20px;font-weight:900;color:#1c1c1e}
+.bc-lbl{font-size:10px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.bc-sub{font-size:10px;color:#aeaeb2;margin-top:2px}
+
+/* ── Modal ── */
+.modal-overlay{
+  position:fixed;inset:0;z-index:100;
+  background:rgba(0,0,0,.35);backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+}
+.modal-card{
+  background:#fff;border-radius:24px;
+  padding:30px 26px;max-width:300px;width:100%;
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.2);
+  animation:modal-in .4s cubic-bezier(.34,1.8,.64,1);
+}
+@keyframes modal-in{from{transform:scale(.75);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-card .mo-star{font-size:52px}
+.modal-card h3{font-size:24px;font-weight:900;margin:8px 0 6px}
+.modal-card p{font-size:14px;font-weight:700;color:#8e8e93;margin-bottom:18px}
+
+/* scrollbar */
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#c7c7cc;border-radius:3px}
+</style>
 </head>
 <body>
 
-<!-- HOME -->
+<!-- ══════════════════════════════
+     HOME
+══════════════════════════════ -->
 <div id="screen-home" class="screen active">
   <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
-  <div class="home-scroll">
-    <div class="home-topbar">
-      <div class="streak-pill"><span>🔥</span><span id="streak-count">0</span></div>
-      <div class="hero-wordmark">Kids Math</div>
-      <button class="icon-btn" id="btn-progress-icon" aria-label="Progress">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="12" width="4" height="7" rx="1.5" fill="currentColor" opacity=".4"/><rect x="8" y="7" width="4" height="12" rx="1.5" fill="currentColor" opacity=".7"/><rect x="15" y="2" width="4" height="17" rx="1.5" fill="currentColor"/></svg>
-      </button>
+  <div class="scroll-wrap">
+    <div class="home-inner">
+
+      <div class="topbar">
+        <div class="streak-pill">🔥 <span id="streak-count">0</span></div>
+        <div class="wordmark">Kids Math</div>
+        <button class="icon-btn" id="btn-progress-icon">📊</button>
+      </div>
+
+      <div class="xp-card">
+        <div class="xp-row">
+          <span class="xp-stars">⭐ <strong id="xp-total">0</strong> XP</span>
+          <span class="xp-lvl">Lv <span id="xp-level">1</span></span>
+        </div>
+        <div class="xp-track"><div class="xp-fill" id="xp-fill"></div></div>
+        <div class="xp-hint"><span id="xp-next">100</span> XP to level up</div>
+      </div>
+
+      <div class="sec-label">Choose Difficulty</div>
+      <div class="level-list">
+        <div class="lcard selected" data-level="1">
+          <span class="lcard-emo">🌱</span>
+          <div class="lcard-body">
+            <div class="lcard-name">Starter</div>
+            <div class="lcard-desc">÷ 1–3 · up to 30</div>
+          </div>
+          <span class="lcard-badge easy">Easy</span>
+        </div>
+        <div class="lcard" data-level="2">
+          <span class="lcard-emo">🚀</span>
+          <div class="lcard-body">
+            <div class="lcard-name">Explorer</div>
+            <div class="lcard-desc">÷ 1–5 · up to 50</div>
+          </div>
+          <span class="lcard-badge med">Medium</span>
+        </div>
+        <div class="lcard" data-level="3">
+          <span class="lcard-emo">⚡</span>
+          <div class="lcard-body">
+            <div class="lcard-name">Challenger</div>
+            <div class="lcard-desc">÷ 1–9 · up to 81</div>
+          </div>
+          <span class="lcard-badge hard">Hard</span>
+        </div>
+        <div class="lcard" data-level="4">
+          <span class="lcard-emo">👑</span>
+          <div class="lcard-body">
+            <div class="lcard-name">Master</div>
+            <div class="lcard-desc">÷ 2–12 · up to 144</div>
+          </div>
+          <span class="lcard-badge exp">Expert</span>
+        </div>
+      </div>
+
+      <div class="sec-label">Achievements</div>
+      <div class="ach-scroll" id="ach-row"></div>
+
+      <button class="btn-cta" id="btn-start">Start Practice ✦</button>
+      <div class="safe-gap"></div>
     </div>
-
-    <div class="xp-bar-card">
-      <div class="xpbc-top">
-        <span class="xp-stars">⭐ <strong id="xp-total">0</strong> XP</span>
-        <span class="xp-lvl-tag">Lv <span id="xp-level">1</span></span>
-      </div>
-      <div class="xp-track"><div class="xp-fill" id="xp-fill"></div></div>
-      <div class="xp-hint"><span id="xp-next-val">100</span> XP to level up</div>
-    </div>
-
-    <div class="section-head">Choose Difficulty</div>
-    <div class="level-cards" id="level-cards">
-      <div class="lcard selected" data-level="1">
-        <span class="lcard-emoji">🌱</span>
-        <div class="lcard-body"><div class="lcard-name">Starter</div><div class="lcard-desc">÷ 1–3</div></div>
-        <span class="lcard-badge easy">Easy</span>
-      </div>
-      <div class="lcard" data-level="2">
-        <span class="lcard-emoji">🚀</span>
-        <div class="lcard-body"><div class="lcard-name">Explorer</div><div class="lcard-desc">÷ 1–5</div></div>
-        <span class="lcard-badge medium">Medium</span>
-      </div>
-      <div class="lcard" data-level="3">
-        <span class="lcard-emoji">⚡</span>
-        <div class="lcard-body"><div class="lcard-name">Challenger</div><div class="lcard-desc">÷ 1–9</div></div>
-        <span class="lcard-badge hard">Hard</span>
-      </div>
-      <div class="lcard" data-level="4">
-        <span class="lcard-emoji">👑</span>
-        <div class="lcard-body"><div class="lcard-name">Master</div><div class="lcard-desc">÷ 2–12</div></div>
-        <span class="lcard-badge expert">Expert</span>
-      </div>
-    </div>
-
-    <div class="section-head">Achievements</div>
-    <div class="achievements-scroll" id="achievements-row"></div>
-
-    <button class="btn-cta" id="btn-start">Start Practice ✦</button>
-    <div class="safe-gap"></div>
   </div>
 </div>
 
-<!-- PRACTICE -->
+<!-- ══════════════════════════════
+     PRACTICE
+══════════════════════════════ -->
 <div id="screen-practice" class="screen">
   <div class="p-topbar">
-    <button class="icon-btn" id="btn-back-home" aria-label="Back">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 3L5 9L11 15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
-    <div class="hearts-row" id="hearts-row">
-      <span class="heart" id="h1">❤️</span><span class="heart" id="h2">❤️</span><span class="heart" id="h3">❤️</span>
+    <button class="icon-btn" id="btn-back">‹</button>
+    <div class="hearts-row">
+      <span class="heart" id="h1">❤️</span>
+      <span class="heart" id="h2">❤️</span>
+      <span class="heart" id="h3">❤️</span>
     </div>
     <div class="timer-chip" id="stopwatch">0:00</div>
   </div>
 
-  <div class="p-progress-bar">
-    <div class="p-progress-fill" id="p-progress-fill"></div>
-  </div>
+  <div class="p-prog-bar"><div class="p-prog-fill" id="p-prog-fill"></div></div>
 
   <div class="stat-row">
-    <div class="stat-pill green"><span>✓</span><strong id="s-correct">0</strong></div>
-    <div class="stat-pill red"><span>✗</span><strong id="s-wrong">0</strong></div>
-    <div class="stat-pill blue"><span>%</span><strong id="s-acc">—</strong></div>
-    <div class="stat-pill gold"><span>⭐</span><strong id="s-xp">+0</strong></div>
+    <div class="stat-pill sp-green"><span>✓</span><strong id="s-correct">0</strong></div>
+    <div class="stat-pill sp-red"><span>✗</span><strong id="s-wrong">0</strong></div>
+    <div class="stat-pill sp-blue"><span>%</span><strong id="s-acc">—</strong></div>
+    <div class="stat-pill sp-gold"><span>⭐</span><strong id="s-xp">+0</strong></div>
   </div>
 
   <div class="q-zone">
     <div class="q-card" id="q-card">
       <div class="q-tag" id="q-tag">Level 1 · Section A</div>
       <div class="equation">
-        <span class="eq-big" id="eq-dividend">48</span>
-        <span class="eq-sym">÷</span>
-        <span class="eq-big" id="eq-divisor">6</span>
-        <span class="eq-sym">=</span>
-        <div class="eq-answer-wrap" id="eq-answer-wrap">
-          <span class="eq-answer" id="eq-answer">?</span>
+        <span class="eq-num" id="eq-dividend">48</span>
+        <span class="eq-op">÷</span>
+        <span class="eq-num" id="eq-divisor">6</span>
+        <span class="eq-op">=</span>
+        <div class="eq-box" id="eq-box">
+          <span class="eq-ans" id="eq-ans">?</span>
         </div>
       </div>
       <div class="feedback" id="feedback"></div>
@@ -110,8 +678,8 @@
   </div>
 
   <div class="numpad-area">
-    <div class="numpad-display" id="numpad-display">_</div>
-    <div class="numpad" id="numpad">
+    <div class="num-display" id="num-display">_</div>
+    <div class="numpad">
       <button class="nk" data-v="7">7</button>
       <button class="nk" data-v="8">8</button>
       <button class="nk" data-v="9">9</button>
@@ -129,74 +697,90 @@
   <div class="safe-gap"></div>
 </div>
 
-<!-- RESULTS -->
+<!-- ══════════════════════════════
+     RESULTS
+══════════════════════════════ -->
 <div id="screen-results" class="screen">
-  <div class="blob rb1"></div><div class="blob rb2"></div>
-  <div class="results-scroll">
-    <div class="trophy-wrap">
-      <div class="trophy-ring" id="trophy-ring">
-        <div class="trophy-emoji" id="trophy-emoji">🏆</div>
+  <div class="blob rb1" style="width:300px;height:300px;background:#d4e8ff;top:-60px;left:-70px;opacity:.7"></div>
+  <div class="blob rb2" style="width:260px;height:260px;background:#eed6f7;bottom:-50px;right:-60px;opacity:.65"></div>
+  <div class="scroll-wrap">
+    <div class="results-inner">
+      <div class="trophy-wrap">
+        <div class="trophy-ring">
+          <div class="trophy-emo" id="trophy-emo">🏆</div>
+        </div>
+        <div class="xp-burst" id="xp-burst">+50 XP</div>
       </div>
-      <div class="xp-burst" id="xp-burst">+50 XP</div>
-    </div>
-    <h2 class="r-headline" id="r-headline">Perfect!</h2>
-    <p class="r-sub" id="r-sub">Section A Complete</p>
+      <h2 class="r-headline" id="r-headline">Perfect!</h2>
+      <p class="r-sub" id="r-sub">Section A · Level 1</p>
 
-    <div class="r-stats">
-      <div class="r-stat green"><div class="rsv" id="r-score">20/20</div><div class="rsl">Score</div></div>
-      <div class="r-stat blue"><div class="rsv" id="r-acc">100%</div><div class="rsl">Accuracy</div></div>
-      <div class="r-stat orange"><div class="rsv" id="r-time">2:34</div><div class="rsl">Time</div></div>
-      <div class="r-stat purple"><div class="rsv" id="r-avg">7.7s</div><div class="rsl">Avg/Q</div></div>
-    </div>
+      <div class="r-stats">
+        <div class="r-stat green"><div class="rsv" id="r-score">20/20</div><div class="rsl">Score</div></div>
+        <div class="r-stat blue"><div class="rsv" id="r-acc">100%</div><div class="rsl">Accuracy</div></div>
+        <div class="r-stat orange"><div class="rsv" id="r-time">2:34</div><div class="rsl">Time</div></div>
+        <div class="r-stat purple"><div class="rsv" id="r-avg">7.7s</div><div class="rsl">Avg/Q</div></div>
+      </div>
 
-    <div class="new-badges" id="new-badges"></div>
+      <div class="new-badges" id="new-badges"></div>
 
-    <div class="review-header">
-      <span class="review-title">Answer Review</span>
-      <button class="review-toggle" id="review-toggle">Show ▾</button>
-    </div>
-    <div class="review-list" id="review-list" style="display:none"></div>
+      <div class="review-hdr">
+        <span class="review-title">Answer Review</span>
+        <button class="review-toggle-btn" id="review-toggle">Show ▾</button>
+      </div>
+      <div class="review-list" id="review-list"></div>
 
-    <div class="r-actions">
-      <button class="btn-cta" id="btn-retry">🔄 Try Again</button>
-      <button class="btn-outline" id="btn-next-section">Next Section →</button>
-      <button class="btn-ghost-sm" id="btn-results-home">Back to Home</button>
+      <div class="r-actions">
+        <button class="btn-cta" id="btn-retry">🔄 Try Again</button>
+        <button class="btn-outline" id="btn-next-section">Next Section →</button>
+        <button class="btn-ghost" id="btn-results-home">Back to Home</button>
+      </div>
+      <div class="safe-gap"></div>
     </div>
-    <div class="safe-gap"></div>
   </div>
 </div>
 
-<!-- PROGRESS -->
+<!-- ══════════════════════════════
+     PROGRESS
+══════════════════════════════ -->
 <div id="screen-progress" class="screen">
   <div class="prog-topbar">
-    <button class="icon-btn" id="btn-back-progress">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 3L5 9L11 15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
+    <button class="icon-btn" id="btn-back-progress">‹</button>
     <span class="prog-title">My Progress</span>
-    <button class="text-btn-red" id="btn-clear-data">Clear</button>
+    <button class="btn-red-txt" id="btn-clear">Clear All</button>
   </div>
-
-  <div class="seg-control">
-    <button class="seg active" data-tab="trend">Trend</button>
-    <button class="seg" data-tab="history">History</button>
-    <button class="seg" data-tab="bests">Bests</button>
+  <div class="seg-ctrl">
+    <button class="seg-btn active" data-tab="trend">Trend</button>
+    <button class="seg-btn" data-tab="history">History</button>
+    <button class="seg-btn" data-tab="bests">Bests</button>
   </div>
-
   <div class="prog-body">
-    <div class="seg-content active" id="seg-trend">
+    <div class="seg-panel active" id="seg-trend">
       <div class="filter-row">
-        <select id="c-level"><option value="all">All Levels</option><option value="1">Starter</option><option value="2">Explorer</option><option value="3">Challenger</option><option value="4">Master</option></select>
-        <select id="c-metric"><option value="accuracy">Accuracy %</option><option value="time">Time (s)</option><option value="score">Score</option></select>
+        <select id="c-level">
+          <option value="all">All Levels</option>
+          <option value="1">Starter</option>
+          <option value="2">Explorer</option>
+          <option value="3">Challenger</option>
+          <option value="4">Master</option>
+        </select>
+        <select id="c-metric">
+          <option value="accuracy">Accuracy %</option>
+          <option value="time">Time (s)</option>
+          <option value="score">Score</option>
+        </select>
       </div>
-      <div class="chart-wrap"><canvas id="trend-chart"></canvas><div class="chart-empty" id="chart-empty">Complete a section to see your trend!</div></div>
+      <div class="chart-card">
+        <canvas id="trend-chart" height="200"></canvas>
+        <div class="empty-msg" id="chart-empty">Complete a section to see your trend!</div>
+      </div>
     </div>
-    <div class="seg-content" id="seg-history">
+    <div class="seg-panel" id="seg-history">
       <div class="hist-list" id="hist-list"></div>
-      <div class="chart-empty" id="hist-empty">No sessions yet!</div>
+      <div class="empty-msg" id="hist-empty" style="display:none">No sessions yet!</div>
     </div>
-    <div class="seg-content" id="seg-bests">
+    <div class="seg-panel" id="seg-bests">
       <div class="bests-grid" id="bests-grid"></div>
-      <div class="chart-empty" id="bests-empty">Complete sessions to see records!</div>
+      <div class="empty-msg" id="bests-empty" style="display:none">Complete sessions to see records!</div>
     </div>
   </div>
 </div>
@@ -204,13 +788,500 @@
 <!-- LEVEL UP MODAL -->
 <div class="modal-overlay" id="modal-levelup" style="display:none">
   <div class="modal-card">
-    <div class="modal-star">⭐</div>
+    <div class="mo-star">⭐</div>
     <h3>Level Up!</h3>
-    <p>You're now <strong>Level <span id="modal-lvl">2</span></strong></p>
+    <p>You reached <strong>Level <span id="modal-lvl">2</span></strong></p>
     <button class="btn-cta" id="btn-dismiss-levelup">Awesome! 🎉</button>
   </div>
 </div>
 
-<script src="js/app.js"></script>
+<script>
+'use strict';
+// ── Config ──────────────────────────────────────────────────────────────────
+const LEVELS={
+  1:{name:'Starter',emoji:'🌱',divisors:[1,2,3],max:30},
+  2:{name:'Explorer',emoji:'🚀',divisors:[1,2,3,4,5],max:50},
+  3:{name:'Challenger',emoji:'⚡',divisors:[1,2,3,4,5,6,7,8,9],max:81},
+  4:{name:'Master',emoji:'👑',divisors:[2,3,4,5,6,7,8,9,10,11,12],max:144}
+};
+const SECTIONS=['A','B','C','D','E','F','G','H'];
+const XP_PER_Q=10;
+const XP_COMBO=[0,0,5,10,15,20,25];
+const XP_PERFECT_BONUS=30;
+const XP_THRESHOLDS=[0,100,250,450,700,1000,1400,1900,2500,3200,4000];
+
+const ACHIEVEMENTS=[
+  {id:'first',icon:'🎯',name:'First Right',  check:s=>s.totalCorrect>=1},
+  {id:'combo3',icon:'🎩',name:'Hat Trick',   check:s=>s.bestCombo>=3},
+  {id:'combo5',icon:'🔥',name:'On Fire',     check:s=>s.bestCombo>=5},
+  {id:'perfect',icon:'🏆',name:'Perfect Run',check:s=>s.hasPerfect},
+  {id:'speed',icon:'⚡',name:'Speed Demon',  check:s=>s.fastestTime<=90000},
+  {id:'scholar',icon:'📚',name:'Scholar',    check:s=>s.totalSections>=5},
+  {id:'streak3',icon:'🌟',name:'3-Day Streak',check:s=>s.dayStreak>=3},
+  {id:'xp100',icon:'💎',name:'Centurion',    check:s=>s.totalXP>=100},
+  {id:'master',icon:'👑',name:'Division King',check:s=>s.completedLevel4},
+  {id:'10sect',icon:'🎖️',name:'Dedicated',   check:s=>s.totalSections>=10}
+];
+
+// ── Storage ─────────────────────────────────────────────────────────────────
+const DB='km_sessions';const ST='km_stats';const AK='km_ach';
+const loadSess=()=>{try{return JSON.parse(localStorage.getItem(DB)||'[]')}catch{return[]}};
+const saveSess=s=>{const a=loadSess();a.push(s);localStorage.setItem(DB,JSON.stringify(a))};
+const loadStats=()=>{try{return JSON.parse(localStorage.getItem(ST)||'{}')}catch{return{}}};
+const saveStats=s=>localStorage.setItem(ST,JSON.stringify(s));
+const loadAch=()=>{try{return JSON.parse(localStorage.getItem(AK)||'[]')}catch{return[]}};
+const saveAch=a=>localStorage.setItem(AK,JSON.stringify(a));
+
+// ── State ────────────────────────────────────────────────────────────────────
+let S={
+  screen:'home',level:1,sectionIdx:0,
+  questions:[],current:0,answers:[],input:'',
+  timerStart:null,timerInterval:null,totalElapsed:0,qStart:null,
+  combo:0,maxCombo:0,sessionXP:0,hearts:3,feedTO:null
+};
+
+// ── Utils ────────────────────────────────────────────────────────────────────
+const $=id=>document.getElementById(id);
+function fmtTime(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return m>0?`${m}m ${s%60}s`:`${s}s`}
+function fmtTimer(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return`${m}:${String(s%60).padStart(2,'0')}`}
+
+function genQ(level){
+  const cfg=LEVELS[level],qs=[];
+  while(qs.length<20){
+    const d=cfg.divisors[Math.floor(Math.random()*cfg.divisors.length)];
+    const q=Math.floor(Math.random()*Math.floor(cfg.max/d))+1;
+    const n=d*q;
+    if(n>0&&n<=cfg.max)qs.push({dividend:n,divisor:d,answer:q});
+  }
+  return qs;
+}
+
+// ── XP ────────────────────────────────────────────────────────────────────────
+function xpLevel(total){
+  let lv=1;
+  for(let i=1;i<XP_THRESHOLDS.length;i++){if(total>=XP_THRESHOLDS[i])lv=i+1;else break;}
+  return lv;
+}
+function xpProgress(total){
+  const lv=xpLevel(total);
+  const lo=XP_THRESHOLDS[lv-1]||0;
+  const hi=XP_THRESHOLDS[lv]||(lo+500);
+  return{lv,pct:Math.min((total-lo)/(hi-lo)*100,100),toNext:Math.max(0,hi-total)};
+}
+function refreshXPBar(){
+  const stats=loadStats();const total=stats.totalXP||0;
+  const{lv,pct,toNext}=xpProgress(total);
+  $('xp-total').textContent=total;
+  $('xp-level').textContent=lv;
+  $('xp-fill').style.width=pct+'%';
+  $('xp-next').textContent=toNext;
+}
+
+// ── Daily streak ──────────────────────────────────────────────────────────────
+function updateStreak(){
+  const stats=loadStats();
+  const today=new Date().toDateString();
+  const yest=new Date(Date.now()-86400000).toDateString();
+  if(stats.lastDate===today){}
+  else if(stats.lastDate===yest)stats.dayStreak=(stats.dayStreak||0)+1;
+  else stats.dayStreak=1;
+  stats.lastDate=today;
+  saveStats(stats);
+  $('streak-count').textContent=stats.dayStreak||1;
+}
+
+// ── Achievements ──────────────────────────────────────────────────────────────
+function checkAch(stats){
+  const earned=loadAch();const newlyEarned=[];
+  ACHIEVEMENTS.forEach(a=>{
+    if(!earned.includes(a.id)&&a.check(stats)){earned.push(a.id);newlyEarned.push(a);}
+  });
+  saveAch(earned);return newlyEarned;
+}
+function renderAchRow(){
+  const earned=loadAch();const row=$('ach-row');row.innerHTML='';
+  ACHIEVEMENTS.forEach(a=>{
+    const d=document.createElement('div');
+    d.className='ach-tile'+(earned.includes(a.id)?'':' locked');
+    d.innerHTML=`<span class="ach-icon">${a.icon}</span><span class="ach-name">${a.name}</span>`;
+    row.appendChild(d);
+  });
+}
+
+// ── Timer ─────────────────────────────────────────────────────────────────────
+function startTimer(){
+  S.timerStart=Date.now()-S.totalElapsed;
+  S.timerInterval=setInterval(()=>{
+    S.totalElapsed=Date.now()-S.timerStart;
+    $('stopwatch').textContent=fmtTimer(S.totalElapsed);
+  },200);
+}
+function stopTimer(){
+  if(S.timerInterval){clearInterval(S.timerInterval);S.timerInterval=null;}
+  if(S.timerStart)S.totalElapsed=Date.now()-S.timerStart;
+}
+function resetTimer(){
+  stopTimer();S.totalElapsed=0;S.timerStart=null;
+  $('stopwatch').textContent='0:00';
+}
+
+// ── Screen ────────────────────────────────────────────────────────────────────
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active'));
+  $(`screen-${name}`).classList.add('active');
+  S.screen=name;
+}
+
+// ── Practice ──────────────────────────────────────────────────────────────────
+function startPractice(){
+  S.questions=genQ(S.level);S.current=0;S.answers=[];S.input='';
+  S.combo=0;S.maxCombo=0;S.sessionXP=0;S.hearts=3;
+  resetTimer();
+  const sec=SECTIONS[S.sectionIdx%SECTIONS.length];
+  $('q-tag').textContent=`Level ${S.level} · Section ${sec}`;
+  renderHearts();updateStats();updateProgBar();
+  showScreen('practice');
+  loadQ();startTimer();updateStreak();
+}
+
+function loadQ(){
+  const q=S.questions[S.current];
+  $('eq-dividend').textContent=q.dividend;
+  $('eq-divisor').textContent=q.divisor;
+  $('eq-ans').textContent='?';
+  $('eq-ans').className='eq-ans';
+  $('eq-box').className='eq-box';
+  $('num-display').textContent='_';
+  const fb=$('feedback');fb.textContent='';fb.className='feedback';
+  $('q-card').className='q-card';
+  $('nk-go').disabled=false;
+  $('combo-pill').classList.remove('show');
+  S.input='';S.qStart=Date.now();
+  updateProgBar();
+}
+
+function submitAnswer(){
+  if(!S.input)return;
+  const given=parseInt(S.input,10);
+  const q=S.questions[S.current];
+  const ok=given===q.answer;
+  S.answers.push({correct:ok,given,expected:q.answer,time:Date.now()-S.qStart});
+
+  const ans=$('eq-ans');const box=$('eq-box');
+  ans.textContent=given;
+
+  if(ok){
+    S.combo++;if(S.combo>S.maxCombo)S.maxCombo=S.combo;
+    const bonus=XP_COMBO[Math.min(S.combo,XP_COMBO.length-1)]||0;
+    S.sessionXP+=XP_PER_Q+bonus;
+    $('q-card').className='q-card pop-correct';
+    ans.className='eq-ans correct';box.className='eq-box correct';
+    const fb=$('feedback');fb.textContent=correctMsg(S.combo);fb.className='feedback correct';
+    if(S.combo>=3){$('combo-pill').textContent=`🔥 ${S.combo} in a row!`;$('combo-pill').classList.add('show');}
+  }else{
+    S.combo=0;S.hearts=Math.max(0,S.hearts-1);
+    $('q-card').className='q-card pop-wrong';
+    ans.className='eq-ans wrong';box.className='eq-box wrong';
+    const fb=$('feedback');fb.textContent=`Answer: ${q.answer}`;fb.className='feedback wrong';
+    $('combo-pill').classList.remove('show');
+    renderHearts();
+  }
+
+  $('nk-go').disabled=true;updateStats();
+  S.feedTO=setTimeout(()=>{
+    S.current++;
+    if(S.current>=20)endSection();else loadQ();
+  },ok?720:1300);
+}
+
+function correctMsg(combo){
+  if(combo>=8)return'🔥 UNSTOPPABLE!';
+  if(combo>=5)return`⚡ On fire! ×${combo}`;
+  if(combo>=3)return`✓ Combo ×${combo}!`;
+  return['✓ Correct!','✓ Nice!','✓ Perfect!','✓ Great!','✓ Spot on!'][Math.floor(Math.random()*5)];
+}
+
+function renderHearts(){
+  ['h1','h2','h3'].forEach((id,i)=>{
+    const el=$(id);if(el)el.className='heart'+(i<S.hearts?'':' lost');
+  });
+}
+
+function updateStats(){
+  const ans=S.answers.length;
+  const cor=S.answers.filter(a=>a.correct).length;
+  const wr=ans-cor;
+  const acc=ans?Math.round(cor/ans*100):null;
+  $('s-correct').textContent=cor;
+  $('s-wrong').textContent=wr;
+  $('s-acc').textContent=acc!==null?acc+'%':'—';
+  $('s-xp').textContent='+'+S.sessionXP;
+}
+
+function updateProgBar(){
+  $('p-prog-fill').style.width=(S.answers.length/20*100)+'%';
+}
+
+// ── End section ───────────────────────────────────────────────────────────────
+function endSection(){
+  stopTimer();
+  const cor=S.answers.filter(a=>a.correct).length;
+  const acc=Math.round(cor/20*100);
+  const sec=SECTIONS[S.sectionIdx%SECTIONS.length];
+  if(acc===100)S.sessionXP+=XP_PERFECT_BONUS;
+
+  const session={
+    date:new Date().toISOString(),level:S.level,levelName:LEVELS[S.level].name,
+    section:sec,score:cor,total:20,accuracy:acc,
+    timeMs:S.totalElapsed,avgTime:Math.round(S.totalElapsed/20/100)/10,
+    maxCombo:S.maxCombo,xpEarned:S.sessionXP,answers:S.answers
+  };
+  saveSess(session);
+
+  const stats=loadStats();
+  const prevLv=xpLevel(stats.totalXP||0);
+  stats.totalXP=(stats.totalXP||0)+S.sessionXP;
+  stats.totalCorrect=(stats.totalCorrect||0)+cor;
+  stats.totalSections=(stats.totalSections||0)+1;
+  stats.bestCombo=Math.max(stats.bestCombo||0,S.maxCombo);
+  if(acc===100)stats.hasPerfect=true;
+  if(S.totalElapsed>0)stats.fastestTime=Math.min(stats.fastestTime||Infinity,S.totalElapsed);
+  if(S.level===4)stats.completedLevel4=true;
+  stats.dayStreak=stats.dayStreak||1;
+  const newLv=xpLevel(stats.totalXP);
+  saveStats(stats);
+
+  const newBadges=checkAch(stats);
+  if(newLv>prevLv){$('modal-lvl').textContent=newLv;$('modal-levelup').style.display='flex';}
+  showResults(session,newBadges);
+}
+
+// ── Results ───────────────────────────────────────────────────────────────────
+function showResults(session,newBadges){
+  const bands={100:'🏆',90:'🌟',80:'🎉',70:'👍',0:'💪'};
+  const band=[100,90,80,70,0].find(b=>session.accuracy>=b);
+  $('trophy-emo').textContent=bands[band];
+  $('xp-burst').textContent='+'+S.sessionXP+' XP';
+  const headlines={100:'Perfect! 🎉',90:'Excellent!',80:'Great Job!',70:'Good Work!',0:'Keep Going!'};
+  $('r-headline').textContent=headlines[band];
+  $('r-sub').textContent=`Section ${session.section} · Level ${session.level}`;
+  $('r-score').textContent=`${session.score}/20`;
+  $('r-acc').textContent=`${session.accuracy}%`;
+  $('r-time').textContent=fmtTime(session.timeMs);
+  $('r-avg').textContent=`${session.avgTime}s`;
+
+  const nb=$('new-badges');nb.innerHTML='';
+  newBadges.forEach((a,i)=>{
+    const d=document.createElement('div');
+    d.className='nbadge';d.style.animationDelay=(i*.1)+'s';
+    d.innerHTML=`<span class="nb-icon">${a.icon}</span><span class="nb-name">${a.name}</span>`;
+    nb.appendChild(d);
+  });
+
+  const rl=$('review-list');rl.innerHTML='';
+  session.answers.forEach((a,i)=>{
+    const q=S.questions[i];
+    const d=document.createElement('div');
+    d.className='rev-row';
+    d.innerHTML=`<span>${a.correct?'✓':'✗'}</span><span class="rev-eq">${q.dividend} ÷ ${q.divisor} =</span><span class="rev-ans ${a.correct?'correct':'wrong'}">${a.given}</span>${!a.correct?`<span class="rev-hint">(${q.answer})</span>`:''}`;
+    rl.appendChild(d);
+  });
+
+  if(session.accuracy>=80)launchConfetti(session.accuracy);
+  showScreen('results');refreshXPBar();
+}
+
+// ── Confetti ──────────────────────────────────────────────────────────────────
+function launchConfetti(acc){
+  if(!document.getElementById('conf-style')){
+    const s=document.createElement('style');s.id='conf-style';
+    s.textContent='@keyframes cfall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(105vh) rotate(720deg);opacity:0}}';
+    document.head.appendChild(s);
+  }
+  const cols=['#34c759','#007aff','#ff9500','#ff3b30','#af52de','#ffcc00','#5ac8fa'];
+  for(let i=0;i<(acc>=100?60:30);i++){
+    const el=document.createElement('div');
+    const sz=6+Math.random()*8;
+    el.style.cssText=`position:fixed;z-index:200;pointer-events:none;left:${Math.random()*100}%;top:${-10-Math.random()*20}px;width:${sz}px;height:${sz}px;background:${cols[Math.floor(Math.random()*cols.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation:cfall ${1.4+Math.random()*1.2}s linear ${Math.random()*.6}s forwards`;
+    document.body.appendChild(el);
+    el.addEventListener('animationend',()=>el.remove());
+  }
+}
+
+// ── Progress / Chart ──────────────────────────────────────────────────────────
+function renderProgress(){
+  renderAchRow();drawChart();renderHistory();renderBests();
+}
+
+function drawChart(){
+  const sessions=loadSessions();
+  const lvlF=$('c-level').value;const metric=$('c-metric').value;
+  const canvas=$('trend-chart');const empty=$('chart-empty');
+  let data=lvlF==='all'?sessions:sessions.filter(s=>String(s.level)===lvlF);
+
+  if(!data.length){canvas.style.display='none';empty.style.display='block';return;}
+  canvas.style.display='block';empty.style.display='none';
+
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.offsetWidth||300;const H=200;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+
+  const pad={t:16,r:14,b:32,l:36};
+  const cw=W-pad.l-pad.r;const ch=H-pad.t-pad.b;
+  const vals=data.map(s=>metric==='accuracy'?s.accuracy:metric==='time'?Math.round(s.timeMs/1000):s.score);
+  const minV=Math.min(...vals);const maxV=Math.max(...vals);const span=maxV-minV||1;
+  const gx=i=>pad.l+(i/Math.max(data.length-1,1))*cw;
+  const gy=v=>pad.t+ch-((v-minV)/span)*ch;
+
+  ctx.clearRect(0,0,W,H);
+
+  for(let i=0;i<=4;i++){
+    const y=pad.t+(i/4)*ch;
+    ctx.strokeStyle='rgba(0,0,0,.06)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#8e8e93';ctx.font=`700 10px Nunito,sans-serif`;ctx.textAlign='right';
+    ctx.fillText(Math.round(maxV-(i/4)*span),pad.l-4,y+4);
+  }
+
+  if(data.length>1){
+    const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
+    grad.addColorStop(0,'rgba(0,122,255,.18)');grad.addColorStop(1,'rgba(0,122,255,0)');
+    ctx.beginPath();ctx.moveTo(gx(0),gy(vals[0]));
+    for(let i=1;i<vals.length;i++){
+      const xc=(gx(i-1)+gx(i))/2,yc=(gy(vals[i-1])+gy(vals[i]))/2;
+      ctx.quadraticCurveTo(gx(i-1),gy(vals[i-1]),xc,yc);
+    }
+    ctx.lineTo(gx(vals.length-1),gy(vals[vals.length-1]));
+    ctx.lineTo(gx(vals.length-1),pad.t+ch);ctx.lineTo(gx(0),pad.t+ch);
+    ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+  }
+
+  ctx.beginPath();ctx.strokeStyle='#007aff';ctx.lineWidth=2.5;
+  ctx.lineJoin='round';ctx.lineCap='round';
+  ctx.moveTo(gx(0),gy(vals[0]));
+  for(let i=1;i<vals.length;i++){
+    const xc=(gx(i-1)+gx(i))/2,yc=(gy(vals[i-1])+gy(vals[i]))/2;
+    ctx.quadraticCurveTo(gx(i-1),gy(vals[i-1]),xc,yc);
+  }
+  ctx.lineTo(gx(vals.length-1),gy(vals[vals.length-1]));ctx.stroke();
+
+  data.forEach((s,i)=>{
+    const x=gx(i),y=gy(vals[i]);
+    ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);
+    ctx.fillStyle='#007aff';ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    if(data.length<=10||i%Math.ceil(data.length/7)===0){
+      const d=new Date(s.date);
+      ctx.fillStyle='#aeaeb2';ctx.font=`700 9px Nunito,sans-serif`;ctx.textAlign='center';
+      ctx.fillText(`${d.getMonth()+1}/${d.getDate()}`,x,H-5);
+    }
+  });
+}
+
+function renderHistory(){
+  const sessions=loadSessions().slice().reverse();
+  const list=$('hist-list');const empty=$('hist-empty');
+  list.innerHTML='';
+  if(!sessions.length){empty.style.display='block';return;}
+  empty.style.display='none';
+  sessions.forEach(s=>{
+    const d=new Date(s.date);
+    const el=document.createElement('div');el.className='hist-item';
+    el.innerHTML=`<div class="hi-circle" style="background:${['','#d1f5db','#fff8cc','#ffe5b4','#eed6f7'][s.level]}">${LEVELS[s.level].emoji}</div><div class="hi-body"><div class="hi-title">${s.levelName} · Section ${s.section}</div><div class="hi-sub">${d.toLocaleDateString(undefined,{month:'short',day:'numeric'})} ${d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})} · ${fmtTime(s.timeMs)}</div></div><div class="hi-score">${s.accuracy}%</div>`;
+    list.appendChild(el);
+  });
+}
+
+function renderBests(){
+  const sessions=loadSessions();
+  const grid=$('bests-grid');const empty=$('bests-empty');
+  grid.innerHTML='';
+  if(!sessions.length){empty.style.display='block';return;}
+  empty.style.display='none';
+  [1,2,3,4].forEach(lv=>{
+    const ls=sessions.filter(s=>s.level===lv);if(!ls.length)return;
+    const ba=ls.reduce((a,b)=>b.accuracy>a.accuracy?b:a);
+    const bt=ls.reduce((a,b)=>b.timeMs<a.timeMs?b:a);
+    grid.innerHTML+=`<div class="best-card"><div class="bc-ico">${LEVELS[lv].emoji}</div><div class="bc-val">${ba.accuracy}%</div><div class="bc-lbl">Lv${lv} Best Acc</div><div class="bc-sub">${new Date(ba.date).toLocaleDateString()}</div></div><div class="best-card"><div class="bc-ico">⚡</div><div class="bc-val">${fmtTime(bt.timeMs)}</div><div class="bc-lbl">Lv${lv} Fastest</div><div class="bc-sub">${bt.accuracy}% acc</div></div>`;
+  });
+}
+
+// ── loadSessions alias for chart ──────────────────────────────────────────────
+function loadSessions(){return loadSess();}
+
+// ── Event listeners ────────────────────────────────────────────────────────────
+document.querySelectorAll('.lcard').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('.lcard').forEach(x=>x.classList.remove('selected'));
+    c.classList.add('selected');S.level=parseInt(c.dataset.level);
+  });
+});
+
+$('btn-start').addEventListener('click',()=>startPractice());
+$('btn-progress-icon').addEventListener('click',()=>{renderProgress();showScreen('progress');});
+$('btn-back').addEventListener('click',()=>{
+  stopTimer();if(S.feedTO)clearTimeout(S.feedTO);showScreen('home');
+});
+
+// Numpad — both click and touchstart for Android reliability
+function handleKey(v){
+  if(v==='C'){S.input='';$('num-display').textContent='_';}
+  else if(v==='GO'){submitAnswer();}
+  else{if(S.input.length>=3)return;S.input+=v;$('num-display').textContent=S.input;}
+}
+document.querySelectorAll('.nk').forEach(btn=>{
+  btn.addEventListener('click',e=>{e.preventDefault();handleKey(btn.dataset.v);});
+  btn.addEventListener('touchend',e=>{e.preventDefault();handleKey(btn.dataset.v);});
+});
+
+$('btn-retry').addEventListener('click',()=>startPractice());
+$('btn-next-section').addEventListener('click',()=>{S.sectionIdx++;startPractice();});
+$('btn-results-home').addEventListener('click',()=>{refreshXPBar();renderAchRow();showScreen('home');});
+$('review-toggle').addEventListener('click',()=>{
+  const rl=$('review-list');const open=rl.classList.toggle('open');
+  $('review-toggle').textContent=open?'Hide ▴':'Show ▾';
+});
+$('btn-back-progress').addEventListener('click',()=>showScreen('home'));
+$('btn-clear').addEventListener('click',()=>{
+  if(confirm('Clear all data?')){
+    localStorage.removeItem('km_sessions');
+    localStorage.removeItem('km_stats');
+    localStorage.removeItem('km_achievements');
+    renderProgress();refreshXPBar();$('streak-count').textContent='0';
+  }
+});
+$('btn-dismiss-levelup').addEventListener('click',()=>$('modal-levelup').style.display='none');
+
+document.querySelectorAll('.seg-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.seg-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    $(`seg-${btn.dataset.tab}`).classList.add('active');
+    if(btn.dataset.tab==='trend')drawChart();
+  });
+});
+$('c-level').addEventListener('change',drawChart);
+$('c-metric').addEventListener('change',drawChart);
+
+// Keyboard support
+document.addEventListener('keydown',e=>{
+  if(S.screen!=='practice')return;
+  if(e.key>='0'&&e.key<='9'&&S.input.length<3){S.input+=e.key;$('num-display').textContent=S.input;}
+  if(e.key==='Enter'){e.preventDefault();submitAnswer();}
+  if(e.key==='Backspace'){S.input='';$('num-display').textContent='_';}
+});
+
+// SW
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+
+// Init
+refreshXPBar();renderAchRow();
+const _initStats=loadStats();
+$('streak-count').textContent=_initStats.dayStreak||0;
+</script>
 </body>
 </html>

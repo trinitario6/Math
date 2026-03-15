@@ -2,7 +2,7 @@
   "name": "Kids Math — Division Practice",
   "short_name": "Kids Math",
   "description": "Gamified division practice tracker with XP, achievements & analytics",
-  "start_url": "/",
+  "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f2f2f7",
@@ -10,14 +10,5 @@
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
-  ],
-  "categories": ["education", "games"],
-  "shortcuts": [
-    {
-      "name": "Start Practice",
-      "short_name": "Practice",
-      "url": "/",
-      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
-    }
   ]
 }
