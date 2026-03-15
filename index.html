@@ -769,7 +769,7 @@ canvas{width:100%;height:auto;display:block}
         <div class="wordmark">Kids Math</div>
         <button class="icon-btn" id="btn-progress-icon">📊</button>
       </div>
-      <div class="home-profile-name">Hi, <span id="home-profile-name">Player</span>! 🔥 <span id="streak-count">0</span> day streak</div>
+      <div class="home-profile-name">Hi, <span id="home-profile-name">User</span>! 🔥 <span id="streak-count">0</span> day streak</div>
 
       <div class="xp-card">
         <div class="xp-row">
@@ -982,6 +982,49 @@ canvas{width:100%;height:auto;display:block}
     <button class="btn-cta" id="btn-dismiss-levelup">Awesome! 🎉</button>
   </div>
 </div>
+
+<!-- ══════════════════════════════
+     PROFILE PICKER SCREEN
+══════════════════════════════ -->
+<div id="screen-profiles" class="screen">
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="scroll-wrap">
+    <div class="profiles-inner">
+      <h2 class="profiles-title">Who's practising?</h2>
+      <p class="profiles-sub">Tap your profile to continue</p>
+      <div class="profiles-grid" id="profiles-grid"></div>
+      <button class="add-profile-btn" id="btn-add-profile">
+        <span style="font-size:20px">＋</span> Add User
+      </button>
+      <div class="safe-gap"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Profile edit bottom sheet -->
+<div class="pedit-overlay" id="pedit-overlay" style="display:none">
+  <div class="pedit-sheet">
+    <div class="pedit-handle"></div>
+    <div class="pedit-avatar-wrap">
+      <div class="pedit-avatar" id="pedit-avatar-preview">
+        <span id="pedit-emoji-preview">😊</span>
+        <div class="pedit-avatar-change">📷</div>
+      </div>
+      <span class="pedit-photo-hint" id="pedit-photo-hint">Upload photo</span>
+    </div>
+    <div class="pedit-label">Name</div>
+    <input class="pedit-input" id="pedit-name" placeholder="Enter name…" maxlength="20"/>
+    <div class="pedit-label">Avatar</div>
+    <div class="emoji-picker" id="emoji-picker"></div>
+    <div class="pedit-actions">
+      <button class="pedit-cancel" id="pedit-cancel">Cancel</button>
+      <button class="pedit-save" id="pedit-save">Save Profile</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden file input for photo upload -->
+<input type="file" id="photo-input" accept="image/*" style="display:none"/>
 
 <script>
 'use strict';
@@ -1492,7 +1535,7 @@ $('review-toggle').addEventListener('click',()=>{
 $('btn-back-progress').addEventListener('click',()=>showScreen('home'));
 $('btn-clear').addEventListener('click',()=>{
   const p = getActiveProfile();
-  const name = p ? p.name : 'this player';
+  const name = p ? p.name : 'this user';
   if(confirm('Clear all data for '+name+'?')){
     const pid = getActiveProfileId();
     localStorage.removeItem('km_sess_'+pid);
@@ -1561,10 +1604,10 @@ function refreshHomeProfile(){
     } else {
       avatarBtn.textContent = p.emoji||'👤';
     }
-    $('home-profile-name').textContent = p.name||'Player';
+    $('home-profile-name').textContent = p.name||'User';
   } else {
     avatarBtn.textContent = '👤';
-    $('home-profile-name').textContent = 'Player';
+    $('home-profile-name').textContent = 'User';
   }
 }
 
@@ -1586,7 +1629,7 @@ function renderProfilesScreen(){
 
     const nameEl = document.createElement('div');
     nameEl.className = 'profile-name-text';
-    nameEl.textContent = p.name||'Player';
+    nameEl.textContent = p.name||'User';
 
     // XP badge
     const xpEl = document.createElement('div');
@@ -1800,49 +1843,5 @@ $('pedit-name').addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDe
   }
 })();
 </script>
-
-<!-- ══════════════════════════════
-     PROFILE PICKER SCREEN
-══════════════════════════════ -->
-<div id="screen-profiles" class="screen">
-  <div class="blob b1"></div><div class="blob b2"></div>
-  <div class="scroll-wrap">
-    <div class="profiles-inner">
-      <h2 class="profiles-title">Who's playing?</h2>
-      <p class="profiles-sub">Tap your profile to continue</p>
-      <div class="profiles-grid" id="profiles-grid"></div>
-      <button class="add-profile-btn" id="btn-add-profile">
-        <span style="font-size:20px">＋</span> Add Player
-      </button>
-      <div class="safe-gap"></div>
-    </div>
-  </div>
-</div>
-
-<!-- Profile edit bottom sheet -->
-<div class="pedit-overlay" id="pedit-overlay" style="display:none">
-  <div class="pedit-sheet">
-    <div class="pedit-handle"></div>
-    <div class="pedit-avatar-wrap">
-      <div class="pedit-avatar" id="pedit-avatar-preview">
-        <span id="pedit-emoji-preview">😊</span>
-        <div class="pedit-avatar-change">📷</div>
-      </div>
-      <span class="pedit-photo-hint" id="pedit-photo-hint">Upload photo</span>
-    </div>
-    <div class="pedit-label">Name</div>
-    <input class="pedit-input" id="pedit-name" placeholder="Enter name…" maxlength="20"/>
-    <div class="pedit-label">Avatar</div>
-    <div class="emoji-picker" id="emoji-picker"></div>
-    <div class="pedit-actions">
-      <button class="pedit-cancel" id="pedit-cancel">Cancel</button>
-      <button class="pedit-save" id="pedit-save">Save Profile</button>
-    </div>
-  </div>
-</div>
-
-<!-- Hidden file input for photo upload -->
-<input type="file" id="photo-input" accept="image/*" style="display:none"/>
-
 </body>
 </html>
