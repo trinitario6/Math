@@ -1127,10 +1127,14 @@ function drawChart(){
   canvas.width=W*dpr;canvas.height=H*dpr;
   const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
 
-  const pad={t:16,r:14,b:32,l:36};
+  const pad={t:26,r:14,b:32,l:36};
   const cw=W-pad.l-pad.r;const ch=H-pad.t-pad.b;
   const vals=data.map(s=>metric==='accuracy'?s.accuracy:metric==='time'?Math.round(s.timeMs/1000):s.score);
-  const minV=Math.min(...vals);const maxV=Math.max(...vals);const span=maxV-minV||1;
+  // Always anchor floor at 0 so values display true height above baseline
+  const minV=0;
+  const rawMax=Math.max(...vals);
+  const maxV=metric==='accuracy'?100:metric==='score'?20:Math.ceil(rawMax*1.2)||10;
+  const span=maxV||1;
   const gx=i=>pad.l+(i/Math.max(data.length-1,1))*cw;
   const gy=v=>pad.t+ch-((v-minV)/span)*ch;
 
@@ -1171,10 +1175,15 @@ function drawChart(){
     ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);
     ctx.fillStyle='#007aff';ctx.fill();
     ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
-    if(data.length<=10||i%Math.ceil(data.length/7)===0){
+    // Value label above each dot
+    ctx.fillStyle='#007aff';ctx.font=`800 11px Nunito,sans-serif`;ctx.textAlign='center';
+    const suffix=metric==='accuracy'?'%':metric==='score'?'':'s';
+    ctx.fillText(vals[i]+suffix,x,y-10);
+    // Date label on x-axis (show all if <=8 sessions, else every nth)
+    if(data.length<=8||i%Math.ceil(data.length/6)===0){
       const d=new Date(s.date);
       ctx.fillStyle='#aeaeb2';ctx.font=`700 9px Nunito,sans-serif`;ctx.textAlign='center';
-      ctx.fillText(`${d.getMonth()+1}/${d.getDate()}`,x,H-5);
+      ctx.fillText(`${d.getMonth()+1}/${d.getDate()}`,x,H-4);
     }
   });
 }
