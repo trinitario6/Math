@@ -796,6 +796,70 @@ canvas{width:100%;height:auto;display:block}
   text-align:center;margin-bottom:14px;
 }
 
+
+/* ── Always-visible install button on home ── */
+.install-row{
+  display:flex;align-items:center;gap:10px;
+  background:#fff;border:1.5px solid rgba(0,122,255,.2);
+  border-radius:14px;padding:12px 14px;
+  margin-bottom:16px;cursor:pointer;
+  box-shadow:0 2px 10px rgba(0,122,255,.08);
+  transition:transform .15s,box-shadow .15s;
+  text-decoration:none;
+}
+.install-row:active{transform:scale(.97);box-shadow:none}
+.install-row.hidden{display:none}
+.ir-icon{font-size:24px;flex-shrink:0}
+.ir-body{flex:1}
+.ir-title{font-size:14px;font-weight:800;color:#007aff}
+.ir-sub{font-size:11px;font-weight:600;color:#8e8e93;margin-top:1px}
+.ir-arrow{font-size:16px;color:#007aff;font-weight:900}
+
+/* ── iOS install instructions modal ── */
+.ios-modal-overlay{
+  position:fixed;inset:0;z-index:400;
+  background:rgba(0,0,0,.45);backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.ios-modal-sheet{
+  background:#fff;border-radius:24px 24px 0 0;
+  width:100%;max-width:500px;
+  padding:20px 22px max(env(safe-area-inset-bottom,20px),20px);
+  animation:sheet-up .3s cubic-bezier(.34,1.4,.64,1);
+}
+.ios-modal-handle{
+  width:36px;height:4px;border-radius:2px;
+  background:#e5e5ea;margin:0 auto 18px;
+}
+.ios-modal-title{
+  font-size:18px;font-weight:900;color:#1c1c1e;
+  margin-bottom:4px;text-align:center;
+}
+.ios-modal-sub{
+  font-size:13px;font-weight:600;color:#8e8e93;
+  text-align:center;margin-bottom:20px;
+}
+.ios-steps{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+.ios-step{
+  display:flex;align-items:center;gap:12px;
+  background:#f2f2f7;border-radius:12px;padding:12px 14px;
+}
+.ios-step-num{
+  width:28px;height:28px;border-radius:50%;
+  background:#007aff;color:#fff;
+  font-size:13px;font-weight:900;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.ios-step-text{font-size:13px;font-weight:700;color:#1c1c1e;line-height:1.35}
+.ios-step-text span{color:#007aff}
+.ios-modal-close{
+  width:100%;padding:14px;background:#f2f2f7;
+  border:none;border-radius:12px;font-family:inherit;
+  font-size:15px;font-weight:800;color:#3a3a3c;cursor:pointer;
+}
+.ios-modal-close:active{background:#e5e5ea}
+
 </style>
 </head>
 <body>
@@ -865,9 +929,43 @@ canvas{width:100%;height:auto;display:block}
       <div class="sec-label">Achievements</div>
       <div class="ach-scroll" id="ach-row"></div>
 
+      <!-- Install app row — always visible, hides once installed -->
+      <div class="install-row" id="install-row">
+        <span class="ir-icon">📲</span>
+        <div class="ir-body">
+          <div class="ir-title">Install Kids Math</div>
+          <div class="ir-sub">Add to home screen — works offline</div>
+        </div>
+        <span class="ir-arrow">›</span>
+      </div>
+
       <button class="btn-cta" id="btn-start">Start Practice ✦</button>
       <div class="safe-gap"></div>
     </div>
+  </div>
+</div>
+
+<!-- iOS install instructions modal -->
+<div class="ios-modal-overlay" id="ios-modal" style="display:none">
+  <div class="ios-modal-sheet">
+    <div class="ios-modal-handle"></div>
+    <div class="ios-modal-title">📲 Add to Home Screen</div>
+    <div class="ios-modal-sub">Install Kids Math for the best experience</div>
+    <div class="ios-steps">
+      <div class="ios-step">
+        <div class="ios-step-num">1</div>
+        <div class="ios-step-text">Tap the <span>Share button</span> at the bottom of Safari (the box with an arrow pointing up)</div>
+      </div>
+      <div class="ios-step">
+        <div class="ios-step-num">2</div>
+        <div class="ios-step-text">Scroll down and tap <span>"Add to Home Screen"</span></div>
+      </div>
+      <div class="ios-step">
+        <div class="ios-step-num">3</div>
+        <div class="ios-step-text">Tap <span>"Add"</span> in the top-right corner</div>
+      </div>
+    </div>
+    <button class="ios-modal-close" id="ios-modal-close">Got it</button>
   </div>
 </div>
 
@@ -1071,6 +1169,35 @@ canvas{width:100%;height:auto;display:block}
 
 <!-- Hidden file input for photo upload -->
 <input type="file" id="photo-input" accept="image/*" style="display:none"/>
+
+<!-- ── Install Banner (slides up from bottom) ── -->
+<div id="install-banner" style="
+  position:fixed;bottom:0;left:0;right:0;z-index:500;
+  background:#fff;border-top:1px solid rgba(0,0,0,.08);
+  border-radius:20px 20px 0 0;
+  padding:16px 20px 24px;
+  box-shadow:0 -4px 24px rgba(0,0,0,.12);
+  display:flex;align-items:center;gap:14px;
+  transform:translateY(110%);
+  transition:transform .35s cubic-bezier(.34,1.2,.64,1);
+">
+  <div style="font-size:36px;flex-shrink:0">📲</div>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:15px;font-weight:800;color:#1c1c1e">Install Kids Math</div>
+    <div style="font-size:12px;font-weight:600;color:#8e8e93;margin-top:2px">Add to home screen · Works offline</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+    <button id="ib-install-btn" style="
+      background:#007aff;color:#fff;border:none;border-radius:10px;
+      padding:9px 18px;font-family:inherit;font-size:14px;font-weight:800;
+      cursor:pointer;white-space:nowrap;
+    ">Install</button>
+    <button id="ib-dismiss-btn" style="
+      background:none;border:none;font-family:inherit;
+      font-size:12px;font-weight:700;color:#8e8e93;cursor:pointer;
+    ">Not now</button>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -1969,19 +2096,97 @@ $('pedit-name').addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDe
     showScreen('home');
   }
 })();
+
+// ══════════════════════════════════════════════════════════════
+// SERVICE WORKER
+// ══════════════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then(reg => reg.update())
+      .catch(err => console.warn('SW failed:', err));
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// ANDROID INSTALL PROMPT
+// Chrome fires beforeinstallprompt when:
+//   1. HTTPS  2. Valid manifest  3. Active SW  4. Not installed
+// ══════════════════════════════════════════════════════════════
+let deferredPrompt = null;
+
+const banner     = $('install-banner');
+const installBtn = $('ib-install-btn');
+const dismissBtn = $('ib-dismiss-btn');
+const installRow = $('install-row');
+
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches
+                        || window.navigator.standalone === true;
+
+function showBanner() {
+  if (!banner || isStandalone()) return;
+  banner.style.transform = 'translateY(0)';
+}
+function hideBanner() {
+  if (banner) banner.style.transform = 'translateY(110%)';
+}
+
+async function triggerInstall() {
+  if (!deferredPrompt) return;
+  hideBanner();
+  deferredPrompt.prompt();
+  const result = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+}
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  setTimeout(showBanner, 1500);
+});
+
+window.addEventListener('appinstalled', () => {
+  hideBanner();
+  deferredPrompt = null;
+  if (installRow) installRow.style.display = 'none';
+});
+
+if (installBtn) {
+  installBtn.addEventListener('click', triggerInstall);
+  installBtn.addEventListener('touchend', e => { e.preventDefault(); triggerInstall(); });
+}
+if (dismissBtn) {
+  dismissBtn.addEventListener('click', hideBanner);
+  dismissBtn.addEventListener('touchend', e => { e.preventDefault(); hideBanner(); });
+}
+
+if (installRow) {
+  if (isStandalone()) installRow.style.display = 'none';
+  const doInstall = () => {
+    if (deferredPrompt) {
+      triggerInstall();
+    } else {
+      alert('To install:\n\nOpen this page in Chrome, tap the \u22ee menu (top-right) then "Add to Home screen".');
+    }
+  };
+  installRow.addEventListener('click', doInstall);
+  installRow.addEventListener('touchend', e => { e.preventDefault(); doInstall(); });
+}
+
+// ResizeObserver + orientation fallback
+const practiceScreen = $('screen-practice');
+if (practiceScreen && typeof ResizeObserver !== 'undefined') {
+  let roTimer;
+  new ResizeObserver(() => {
+    clearTimeout(roTimer);
+    roTimer = setTimeout(() => { void practiceScreen.offsetHeight; }, 60);
+  }).observe(document.body);
+}
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => practiceScreen && (void practiceScreen.offsetHeight), 200);
+});
+
 </script>
 
-<!-- ── Install Banner ── -->
-<div id="install-banner" role="complementary" aria-label="Install app">
-  <div class="ib-icon">➗</div>
-  <div class="ib-text">
-    <div class="ib-title">Add Kids Math to your home screen</div>
-    <div class="ib-sub">Works offline · No app store needed</div>
-  </div>
-  <div class="ib-actions">
-    <button class="ib-install" id="ib-install-btn">Install</button>
-    <button class="ib-dismiss" id="ib-dismiss-btn">Not now</button>
-  </div>
-</div>
 </body>
 </html>
