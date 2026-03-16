@@ -2453,40 +2453,10 @@ $('pedit-name').addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDe
   }
 })();
 
-// ══════════════════════════════════════════════════════════════
-// SERVICE WORKER — auto-update on every deploy
-// The SW file itself uses a VERSION constant. When sw.js changes
-// on the server, the browser detects it (byte-diff), installs the
-// new SW, and skipWaiting() activates it immediately. clients.claim()
-// then takes over the open tab without needing a second reload.
-// ══════════════════════════════════════════════════════════════
+// ── Service Worker ───────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })
-      .then(reg => {
-        // Force an update check on every page load
-        reg.update();
-
-        // When a new SW is waiting, activate it immediately
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          if (!newWorker) return;
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'activated') {
-              // New SW is active — refresh to get latest assets
-              window.location.reload();
-            }
-          });
-        });
-      })
-      .catch(err => console.warn('SW failed:', err));
-
-    // Also handle the case where a SW was waiting before this page loaded
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
-      });
-    }
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
   });
 }
 
