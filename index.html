@@ -62,10 +62,11 @@ body{
   padding:16px 20px max(env(safe-area-inset-bottom,16px),16px);
   box-shadow:0 -4px 24px rgba(0,0,0,.12);
   display:flex;align-items:center;gap:14px;
-  transform:translateY(100%);
+  transform:translateY(110%);
+  pointer-events:none;
   transition:transform .35s cubic-bezier(.34,1.2,.64,1);
 }
-#install-banner.visible{transform:translateY(0)}
+#install-banner.visible{transform:translateY(0);pointer-events:all;}
 .ib-icon{font-size:36px;flex-shrink:0}
 .ib-text{flex:1 1 0;min-width:0}
 .ib-title{font-size:15px;font-weight:800;color:#1c1c1e}
@@ -866,8 +867,11 @@ canvas{width:100%;height:auto;display:block}
   position:fixed;inset:0;z-index:600;
   background:rgba(0,0,0,.5);
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-  display:none;align-items:flex-end;justify-content:center;
+  align-items:flex-end;justify-content:center;
+  pointer-events:none;
+  display:none;
 }
+#install-guide-modal.open{display:flex;pointer-events:all;}
 .igm-sheet {
   background:#fff;width:100%;max-width:480px;
   border-radius:24px 24px 0 0;
@@ -1006,29 +1010,6 @@ canvas{width:100%;height:auto;display:block}
   </div>
 </div>
 
-<!-- iOS install instructions modal -->
-<div class="ios-modal-overlay" id="ios-modal" style="display:none">
-  <div class="ios-modal-sheet">
-    <div class="ios-modal-handle"></div>
-    <div class="ios-modal-title">📲 Add to Home Screen</div>
-    <div class="ios-modal-sub">Install Kids Math for the best experience</div>
-    <div class="ios-steps">
-      <div class="ios-step">
-        <div class="ios-step-num">1</div>
-        <div class="ios-step-text">Tap the <span>Share button</span> at the bottom of Safari (the box with an arrow pointing up)</div>
-      </div>
-      <div class="ios-step">
-        <div class="ios-step-num">2</div>
-        <div class="ios-step-text">Scroll down and tap <span>"Add to Home Screen"</span></div>
-      </div>
-      <div class="ios-step">
-        <div class="ios-step-num">3</div>
-        <div class="ios-step-text">Tap <span>"Add"</span> in the top-right corner</div>
-      </div>
-    </div>
-    <button class="ios-modal-close" id="ios-modal-close">Got it</button>
-  </div>
-</div>
 
 <!-- ══════════════════════════════
      PRACTICE
@@ -1232,31 +1213,39 @@ canvas{width:100%;height:auto;display:block}
 <input type="file" id="photo-input" accept="image/*" style="display:none"/>
 
 <!-- ── Install Banner (slides up from bottom) ── -->
-<div id="install-banner" style="
-  position:fixed;bottom:0;left:0;right:0;z-index:500;
-  background:#fff;border-top:1px solid rgba(0,0,0,.08);
-  border-radius:20px 20px 0 0;
-  padding:16px 20px 24px;
-  box-shadow:0 -4px 24px rgba(0,0,0,.12);
-  display:flex;align-items:center;gap:14px;
-  transform:translateY(110%);
-  transition:transform .35s cubic-bezier(.34,1.2,.64,1);
-">
-  <div style="font-size:36px;flex-shrink:0">📲</div>
-  <div style="flex:1;min-width:0">
-    <div style="font-size:15px;font-weight:800;color:#1c1c1e">Install Kids Math</div>
-    <div style="font-size:12px;font-weight:600;color:#8e8e93;margin-top:2px">Add to home screen · Works offline</div>
-  </div>
-  <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-    <button id="ib-install-btn" style="
-      background:#007aff;color:#fff;border:none;border-radius:10px;
-      padding:9px 18px;font-family:inherit;font-size:14px;font-weight:800;
-      cursor:pointer;white-space:nowrap;
-    ">Install</button>
-    <button id="ib-dismiss-btn" style="
-      background:none;border:none;font-family:inherit;
-      font-size:12px;font-weight:700;color:#8e8e93;cursor:pointer;
-    ">Not now</button>
+
+
+<!-- Android install guide modal -->
+<div id="install-guide-modal">
+  <div class="igm-sheet">
+    <div class="igm-handle"></div>
+    <div class="igm-title">📲 Install Kids Math</div>
+    <div class="igm-sub">Add to your Android home screen</div>
+
+    <div class="igm-prompt-note">
+      ⚡ If Chrome shows an "Install app" prompt at the bottom of your screen — tap it! Otherwise follow the steps below.
+    </div>
+
+    <div class="igm-steps">
+      <div class="igm-step">
+        <div class="igm-num">1</div>
+        <div class="igm-text">Open this page in <b>Google Chrome</b> (not Samsung Browser or Firefox)</div>
+      </div>
+      <div class="igm-step">
+        <div class="igm-num">2</div>
+        <div class="igm-text">Tap the <b>⋮ three-dot menu</b> in the top-right corner of Chrome</div>
+      </div>
+      <div class="igm-step">
+        <div class="igm-num">3</div>
+        <div class="igm-text">Tap <b>"Add to Home screen"</b> or <b>"Install app"</b></div>
+      </div>
+      <div class="igm-step">
+        <div class="igm-num">4</div>
+        <div class="igm-text">Tap <b>"Add"</b> or <b>"Install"</b> to confirm</div>
+      </div>
+    </div>
+
+    <button id="install-guide-close">Got it ✓</button>
   </div>
 </div>
 
@@ -1812,33 +1801,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// (install logic below)
 
-// ── ResizeObserver for layout reflow ─────────────────────────────────────────
-// Handles keyboard appearing/disappearing and orientation changes reliably
-const practiceScreen = document.getElementById('screen-practice');
-if (practiceScreen && typeof ResizeObserver !== 'undefined') {
-  let roTimer;
-  const ro = new ResizeObserver(() => {
-    clearTimeout(roTimer);
-    roTimer = setTimeout(() => {
-      // Force relayout on the practice screen so numpad + question refit
-      practiceScreen.style.height = '';
-      void practiceScreen.offsetHeight; // trigger reflow
-    }, 60);
-  });
-  ro.observe(document.body);
-}
-
-// Orientation change fallback for older browsers
-window.addEventListener('orientationchange', () => {
-  setTimeout(() => {
-    if (practiceScreen) {
-      practiceScreen.style.height = '';
-      void practiceScreen.offsetHeight;
-    }
-  }, 200);
-});
 
 // ══════════════════════════════════════════════════
 // PROFILE UI FUNCTIONS
@@ -2150,10 +2113,10 @@ function hideBanner() {
 
 // Show the in-app step-by-step guide modal
 function showGuide() {
-  if (guideModal) guideModal.style.display = 'flex';
+  if (guideModal) guideModal.classList.add('open');
 }
 function hideGuide() {
-  if (guideModal) guideModal.style.display = 'none';
+  if (guideModal) guideModal.classList.remove('open');
 }
 
 // Trigger the native Android install prompt
@@ -2242,39 +2205,18 @@ window.addEventListener('orientationchange', () => {
 </script>
 
 
-<!-- Android install guide modal -->
-<div id="install-guide-modal">
-  <div class="igm-sheet">
-    <div class="igm-handle"></div>
-    <div class="igm-title">📲 Install Kids Math</div>
-    <div class="igm-sub">Add to your Android home screen</div>
 
-    <div class="igm-prompt-note">
-      ⚡ If Chrome shows an "Install app" prompt at the bottom of your screen — tap it! Otherwise follow the steps below.
-    </div>
-
-    <div class="igm-steps">
-      <div class="igm-step">
-        <div class="igm-num">1</div>
-        <div class="igm-text">Open this page in <b>Google Chrome</b> (not Samsung Browser or Firefox)</div>
-      </div>
-      <div class="igm-step">
-        <div class="igm-num">2</div>
-        <div class="igm-text">Tap the <b>⋮ three-dot menu</b> in the top-right corner of Chrome</div>
-      </div>
-      <div class="igm-step">
-        <div class="igm-num">3</div>
-        <div class="igm-text">Tap <b>"Add to Home screen"</b> or <b>"Install app"</b></div>
-      </div>
-      <div class="igm-step">
-        <div class="igm-num">4</div>
-        <div class="igm-text">Tap <b>"Add"</b> or <b>"Install"</b> to confirm</div>
-      </div>
-    </div>
-
-    <button id="install-guide-close">Got it ✓</button>
+<!-- Install banner — slides up from bottom when prompt is ready -->
+<div id="install-banner">
+  <div class="ib-icon">📲</div>
+  <div class="ib-text">
+    <div class="ib-title">Install Kids Math</div>
+    <div class="ib-sub">Add to home screen · Works offline</div>
+  </div>
+  <div class="ib-actions">
+    <button class="ib-install" id="ib-install-btn">Install</button>
+    <button class="ib-dismiss" id="ib-dismiss-btn">Not now</button>
   </div>
 </div>
-
 </body>
 </html>
