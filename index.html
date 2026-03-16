@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Kids Math"/>
 <meta name="mobile-web-app-capable" content="yes"/>
-<title>Kids Math — Division</title>
+<title>Kids Math</title>
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icons/icon-192.png"/>
 <style>
@@ -29,11 +29,8 @@ body{
   -webkit-tap-highlight-color:transparent;
   touch-action:manipulation;
   -webkit-text-size-adjust:100%;
-  /* Safe area insets for notches / home indicator on all sides */
-  padding-top:env(safe-area-inset-top,0px);
-  padding-bottom:env(safe-area-inset-bottom,0px);
-  padding-left:env(safe-area-inset-left,0px);
-  padding-right:env(safe-area-inset-right,0px);
+  /* NO body padding - screens are position:fixed and manage their own
+     safe-area insets. Body padding breaks touch targets on fixed elements. */
 }
 
 /* ── Screens ── */
@@ -925,6 +922,35 @@ canvas{width:100%;height:auto;display:block}
 }
 #install-guide-close:active{background:#e5e5ea}
 
+
+/* ══════════════════════════════
+   TOPIC SELECTOR
+══════════════════════════════ */
+.topic-scroll{
+  display:flex;gap:9px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  padding-bottom:6px;margin-bottom:18px;
+  scrollbar-width:none;
+}
+.topic-scroll::-webkit-scrollbar{display:none}
+.topic-chip{
+  flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:5px;
+  background:rgba(255,255,255,.9);
+  border:2px solid transparent;
+  border-radius:16px;padding:12px 14px;
+  cursor:pointer;min-width:72px;
+  box-shadow:0 2px 10px rgba(0,0,0,.06);
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1),border-color .18s,box-shadow .18s;
+  -webkit-user-select:none;user-select:none;
+}
+.topic-chip:active{transform:scale(.93)}
+.topic-chip.selected{
+  border-color:#007aff;
+  box-shadow:0 0 0 4px rgba(0,122,255,.12),0 4px 14px rgba(0,0,0,.09);
+}
+.tc-icon{font-size:24px;line-height:1}
+.tc-name{font-size:11px;font-weight:800;color:#3a3a3c;text-align:center}
+.topic-chip.selected .tc-name{color:#007aff}
+
 </style>
 </head>
 <body>
@@ -955,13 +981,37 @@ canvas{width:100%;height:auto;display:block}
         <div class="xp-hint"><span id="xp-next">100</span> XP to level up</div>
       </div>
 
+      <div class="sec-label">Choose Topic</div>
+      <div class="topic-scroll" id="topic-list">
+        <div class="topic-chip selected" data-topic="addition">
+          <span class="tc-icon">➕</span>
+          <span class="tc-name">Addition</span>
+        </div>
+        <div class="topic-chip" data-topic="subtraction">
+          <span class="tc-icon">➖</span>
+          <span class="tc-name">Subtraction</span>
+        </div>
+        <div class="topic-chip" data-topic="multiplication">
+          <span class="tc-icon">✖️</span>
+          <span class="tc-name">Multiply</span>
+        </div>
+        <div class="topic-chip" data-topic="division">
+          <span class="tc-icon">➗</span>
+          <span class="tc-name">Division</span>
+        </div>
+        <div class="topic-chip" data-topic="fractions">
+          <span class="tc-icon">½</span>
+          <span class="tc-name">Fractions</span>
+        </div>
+      </div>
+
       <div class="sec-label">Choose Difficulty</div>
-      <div class="level-list">
+      <div class="level-list" id="level-list">
         <div class="lcard selected" data-level="1">
           <span class="lcard-emo">🌱</span>
           <div class="lcard-body">
             <div class="lcard-name">Starter</div>
-            <div class="lcard-desc">÷ 1–3 · up to 30</div>
+            <div class="lcard-desc" id="lcard-desc-1">Numbers up to 10</div>
           </div>
           <span class="lcard-badge easy">Easy</span>
         </div>
@@ -969,7 +1019,7 @@ canvas{width:100%;height:auto;display:block}
           <span class="lcard-emo">🚀</span>
           <div class="lcard-body">
             <div class="lcard-name">Explorer</div>
-            <div class="lcard-desc">÷ 1–5 · up to 50</div>
+            <div class="lcard-desc" id="lcard-desc-2">Numbers up to 20</div>
           </div>
           <span class="lcard-badge med">Medium</span>
         </div>
@@ -977,7 +1027,7 @@ canvas{width:100%;height:auto;display:block}
           <span class="lcard-emo">⚡</span>
           <div class="lcard-body">
             <div class="lcard-name">Challenger</div>
-            <div class="lcard-desc">÷ 1–9 · up to 81</div>
+            <div class="lcard-desc" id="lcard-desc-3">Numbers up to 50</div>
           </div>
           <span class="lcard-badge hard">Hard</span>
         </div>
@@ -985,7 +1035,7 @@ canvas{width:100%;height:auto;display:block}
           <span class="lcard-emo">👑</span>
           <div class="lcard-body">
             <div class="lcard-name">Master</div>
-            <div class="lcard-desc">÷ 2–12 · up to 144</div>
+            <div class="lcard-desc" id="lcard-desc-4">Numbers up to 100</div>
           </div>
           <span class="lcard-badge exp">Expert</span>
         </div>
@@ -1036,11 +1086,11 @@ canvas{width:100%;height:auto;display:block}
 
   <div class="q-zone">
     <div class="q-card" id="q-card">
-      <div class="q-tag" id="q-tag">Level 1 · Section A</div>
-      <div class="equation">
-        <span class="eq-num" id="eq-dividend">48</span>
-        <span class="eq-op">÷</span>
-        <span class="eq-num" id="eq-divisor">6</span>
+      <div class="q-tag" id="q-tag">Addition · Section A</div>
+      <div class="equation" id="equation-wrap">
+        <span class="eq-num" id="eq-a">12</span>
+        <span class="eq-op" id="eq-op">+</span>
+        <span class="eq-num" id="eq-b">5</span>
         <span class="eq-op">=</span>
         <div class="eq-box" id="eq-box">
           <span class="eq-ans" id="eq-ans">?</span>
@@ -1252,11 +1302,29 @@ canvas{width:100%;height:auto;display:block}
 <script>
 'use strict';
 // ── Config ──────────────────────────────────────────────────────────────────
+// ── Topics & Levels ────────────────────────────────────────────────────────────
+const TOPICS = {
+  addition:       { name:'Addition',       symbol:'+',  emoji:'➕' },
+  subtraction:    { name:'Subtraction',    symbol:'−',  emoji:'➖' },
+  multiplication: { name:'Multiplication', symbol:'×',  emoji:'✖️' },
+  division:       { name:'Division',       symbol:'÷',  emoji:'➗' },
+  fractions:      { name:'Fractions',      symbol:'÷',  emoji:'½' },
+};
+
+// Per-topic difficulty descriptors shown on level cards
+const TOPIC_LEVEL_DESC = {
+  addition:       ['1–10 + 1–10','1–20 + 1–20','1–50 + 1–50','1–100 + 1–100'],
+  subtraction:    ['up to 20','up to 30','up to 50','up to 100'],
+  multiplication: ['× 1–5','× 1–10','× 1–12','× 1–15'],
+  division:       ['÷ 1–3 · up to 30','÷ 1–5 · up to 50','÷ 1–9 · up to 81','÷ 2–12 · up to 144'],
+  fractions:      ['halves & quarters','thirds & fifths','sixths & eighths','mixed denominators'],
+};
+
 const LEVELS={
-  1:{name:'Starter',emoji:'🌱',divisors:[1,2,3],max:30},
-  2:{name:'Explorer',emoji:'🚀',divisors:[1,2,3,4,5],max:50},
-  3:{name:'Challenger',emoji:'⚡',divisors:[1,2,3,4,5,6,7,8,9],max:81},
-  4:{name:'Master',emoji:'👑',divisors:[2,3,4,5,6,7,8,9,10,11,12],max:144}
+  1:{name:'Starter',  emoji:'🌱'},
+  2:{name:'Explorer', emoji:'🚀'},
+  3:{name:'Challenger',emoji:'⚡'},
+  4:{name:'Master',   emoji:'👑'},
 };
 const SECTIONS=['A','B','C','D','E','F','G','H'];
 const XP_PER_Q=10;
@@ -1265,16 +1333,22 @@ const XP_PERFECT_BONUS=30;
 const XP_THRESHOLDS=[0,100,250,450,700,1000,1400,1900,2500,3200,4000];
 
 const ACHIEVEMENTS=[
-  {id:'first',icon:'🎯',name:'First Right',  check:s=>s.totalCorrect>=1},
-  {id:'combo3',icon:'🎩',name:'Hat Trick',   check:s=>s.bestCombo>=3},
-  {id:'combo5',icon:'🔥',name:'On Fire',     check:s=>s.bestCombo>=5},
-  {id:'perfect',icon:'🏆',name:'Perfect Run',check:s=>s.hasPerfect},
-  {id:'speed',icon:'⚡',name:'Speed Demon',  check:s=>s.fastestTime<=90000},
-  {id:'scholar',icon:'📚',name:'Scholar',    check:s=>s.totalSections>=5},
-  {id:'streak3',icon:'🌟',name:'3-Day Streak',check:s=>s.dayStreak>=3},
-  {id:'xp100',icon:'💎',name:'Centurion',    check:s=>s.totalXP>=100},
-  {id:'master',icon:'👑',name:'Division King',check:s=>s.completedLevel4},
-  {id:'10sect',icon:'🎖️',name:'Dedicated',   check:s=>s.totalSections>=10}
+  {id:'first',   icon:'🎯',name:'First Right',   check:s=>s.totalCorrect>=1},
+  {id:'combo3',  icon:'🎩',name:'Hat Trick',     check:s=>s.bestCombo>=3},
+  {id:'combo5',  icon:'🔥',name:'On Fire',       check:s=>s.bestCombo>=5},
+  {id:'perfect', icon:'🏆',name:'Perfect Run',   check:s=>s.hasPerfect},
+  {id:'speed',   icon:'⚡',name:'Speed Demon',   check:s=>s.fastestTime<=90000},
+  {id:'scholar', icon:'📚',name:'Scholar',       check:s=>s.totalSections>=5},
+  {id:'streak3', icon:'🌟',name:'3-Day Streak',  check:s=>s.dayStreak>=3},
+  {id:'xp100',   icon:'💎',name:'Centurion',     check:s=>s.totalXP>=100},
+  {id:'master',  icon:'👑',name:'Math Master',   check:s=>s.completedLevel4},
+  {id:'10sect',  icon:'🎖️',name:'Dedicated',     check:s=>s.totalSections>=10},
+  {id:'allTopics',icon:'🌈',name:'All-Rounder',  check:s=>s.topicsCompleted>=5},
+  {id:'adder',   icon:'➕',name:'Adder',         check:s=>s.topicSessions?.addition>=3},
+  {id:'subber',  icon:'➖',name:'Subtractor',    check:s=>s.topicSessions?.subtraction>=3},
+  {id:'multer',  icon:'✖️',name:'Multiplier',    check:s=>s.topicSessions?.multiplication>=3},
+  {id:'divider', icon:'➗',name:'Divider',       check:s=>s.topicSessions?.division>=3},
+  {id:'fracter', icon:'½',name:'Fraction Fan',  check:s=>s.topicSessions?.fractions>=3},
 ];
 
 // ══════════════════════════════════════════════════
@@ -1338,7 +1412,7 @@ const saveAch=a=>localStorage.setItem(profileKey('ach'),JSON.stringify(a));
 
 // ── State ────────────────────────────────────────────────────────────────────
 let S={
-  screen:'home',level:1,sectionIdx:0,
+  screen:'home',level:1,topic:'addition',sectionIdx:0,
   questions:[],current:0,answers:[],input:'',
   timerStart:null,timerInterval:null,totalElapsed:0,qStart:null,
   combo:0,maxCombo:0,sessionXP:0,hearts:3,feedTO:null
@@ -1349,15 +1423,62 @@ const $=id=>document.getElementById(id);
 function fmtTime(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return m>0?`${m}m ${s%60}s`:`${s}s`}
 function fmtTimer(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return`${m}:${String(s%60).padStart(2,'0')}`}
 
-function genQ(level){
-  const cfg=LEVELS[level],qs=[];
+function rnd(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+
+function genQ(level, topic){
+  topic = topic || S.topic || 'addition';
+  const qs=[];
   while(qs.length<20){
-    const d=cfg.divisors[Math.floor(Math.random()*cfg.divisors.length)];
-    const q=Math.floor(Math.random()*Math.floor(cfg.max/d))+1;
-    const n=d*q;
-    if(n>0&&n<=cfg.max)qs.push({dividend:n,divisor:d,answer:q});
+    let q = genOneQ(level, topic);
+    if(q) qs.push(q);
   }
   return qs;
+}
+
+function genOneQ(level, topic){
+  if(topic==='addition'){
+    const maxN=[10,20,50,100][level-1];
+    const a=rnd(1,maxN), b=rnd(1,maxN);
+    return {a, b, op:'+', answer:a+b, display:`${a} + ${b}`};
+  }
+  if(topic==='subtraction'){
+    const maxN=[20,30,50,100][level-1];
+    const a=rnd(1,maxN);
+    const b=rnd(1,a); // b≤a so answer≥0
+    return {a, b, op:'−', answer:a-b, display:`${a} − ${b}`};
+  }
+  if(topic==='multiplication'){
+    const maxF=[5,10,12,15][level-1];
+    const a=rnd(1,maxF), b=rnd(1,maxF);
+    return {a, b, op:'×', answer:a*b, display:`${a} × ${b}`};
+  }
+  if(topic==='division'){
+    const divisorSets=[[1,2,3],[1,2,3,4,5],[1,2,3,4,5,6,7,8,9],[2,3,4,5,6,7,8,9,10,11,12]];
+    const maxN=[30,50,81,144][level-1];
+    const divisors=divisorSets[level-1];
+    const d=divisors[Math.floor(Math.random()*divisors.length)];
+    const maxQ=Math.floor(maxN/d);
+    const q=rnd(1,maxQ);
+    const n=d*q;
+    if(n<=0||n>maxN) return null;
+    return {a:n, b:d, op:'÷', answer:q, display:`${n} ÷ ${d}`};
+  }
+  if(topic==='fractions'){
+    // Show fraction, ask for simplified numerator or equivalent value
+    // Level 1: halves/quarters, Level 2: thirds/fifths,
+    // Level 3: sixths/eighths, Level 4: mixed
+    const denoms=[[2,4],[3,5],[6,8],[3,4,5,6,8,10]][level-1];
+    const denom=denoms[Math.floor(Math.random()*denoms.length)];
+    const numer=rnd(1,denom-1);
+    // Question: what is numer/denom of a whole number?
+    // Use multiples of denom so answer is whole number
+    const whole=denom*rnd(1,[5,8,10,12][level-1]);
+    const answer=(whole/denom)*numer;
+    if(!Number.isInteger(answer)||answer<=0) return null;
+    return {a:numer, b:denom, whole, op:'frac', answer,
+            display:`${numer}/${denom} of ${whole}`};
+  }
+  return null;
 }
 
 // ── XP ────────────────────────────────────────────────────────────────────────
@@ -1438,11 +1559,12 @@ function showScreen(name){
 
 // ── Practice ──────────────────────────────────────────────────────────────────
 function startPractice(){
-  S.questions=genQ(S.level);S.current=0;S.answers=[];S.input='';
+  S.questions=genQ(S.level,S.topic);S.current=0;S.answers=[];S.input='';
   S.combo=0;S.maxCombo=0;S.sessionXP=0;S.hearts=3;
   resetTimer();
   const sec=SECTIONS[S.sectionIdx%SECTIONS.length];
-  $('q-tag').textContent=`Level ${S.level} · Section ${sec}`;
+  const topicName=TOPICS[S.topic]?.name||S.topic;
+  $('q-tag').textContent=`${topicName} · Section ${sec}`;
   renderHearts();updateStats();updateProgBar();
   showScreen('practice');
   loadQ();startTimer();updateStreak();
@@ -1450,8 +1572,7 @@ function startPractice(){
 
 function loadQ(){
   const q=S.questions[S.current];
-  $('eq-dividend').textContent=q.dividend;
-  $('eq-divisor').textContent=q.divisor;
+  renderEquation(q);
   $('eq-ans').textContent='?';
   $('eq-ans').className='eq-ans';
   $('eq-box').className='eq-box';
@@ -1464,6 +1585,32 @@ function loadQ(){
   updateProgBar();
 }
 
+function renderEquation(q){
+  const wrap=$('equation-wrap');
+  if(q.op==='frac'){
+    // Fractions: show "numerator/denominator of whole ="
+    wrap.innerHTML=`
+      <div style="display:flex;flex-direction:column;align-items:center;line-height:1;gap:2px">
+        <span class="eq-num" style="font-size:clamp(28px,8vw,42px)">${q.a}</span>
+        <div style="width:clamp(24px,7vw,36px);height:3px;background:#1c1c1e;border-radius:2px"></div>
+        <span class="eq-num" style="font-size:clamp(28px,8vw,42px)">${q.b}</span>
+      </div>
+      <span class="eq-op">of</span>
+      <span class="eq-num">${q.whole}</span>
+      <span class="eq-op">=</span>
+      <div class="eq-box" id="eq-box"><span class="eq-ans" id="eq-ans">?</span></div>
+    `;
+  } else {
+    wrap.innerHTML=`
+      <span class="eq-num" id="eq-a">${q.a}</span>
+      <span class="eq-op" id="eq-op">${q.op}</span>
+      <span class="eq-num" id="eq-b">${q.b}</span>
+      <span class="eq-op">=</span>
+      <div class="eq-box" id="eq-box"><span class="eq-ans" id="eq-ans">?</span></div>
+    `;
+  }
+}
+
 function submitAnswer(){
   if(!S.input)return;
   const given=parseInt(S.input,10);
@@ -1471,21 +1618,23 @@ function submitAnswer(){
   const ok=given===q.answer;
   S.answers.push({correct:ok,given,expected:q.answer,time:Date.now()-S.qStart});
 
-  const ans=$('eq-ans');const box=$('eq-box');
-  ans.textContent=given;
+  // Re-fetch after renderEquation re-built the DOM
+  const ans=document.getElementById('eq-ans');
+  const box=document.getElementById('eq-box');
+  if(ans) ans.textContent=given;
 
   if(ok){
     S.combo++;if(S.combo>S.maxCombo)S.maxCombo=S.combo;
     const bonus=XP_COMBO[Math.min(S.combo,XP_COMBO.length-1)]||0;
     S.sessionXP+=XP_PER_Q+bonus;
     $('q-card').className='q-card pop-correct';
-    ans.className='eq-ans correct';box.className='eq-box correct';
+    if(ans) ans.className='eq-ans correct';if(box) box.className='eq-box correct';
     const fb=$('feedback');fb.textContent=correctMsg(S.combo);fb.className='feedback correct';
     if(S.combo>=3){$('combo-pill').textContent=`🔥 ${S.combo} in a row!`;$('combo-pill').classList.add('show');}
   }else{
     S.combo=0;S.hearts=Math.max(0,S.hearts-1);
     $('q-card').className='q-card pop-wrong';
-    ans.className='eq-ans wrong';box.className='eq-box wrong';
+    if(ans) ans.className='eq-ans wrong';if(box) box.className='eq-box wrong';
     const fb=$('feedback');fb.textContent=`Answer: ${q.answer}`;fb.className='feedback wrong';
     $('combo-pill').classList.remove('show');
     renderHearts();
@@ -1536,6 +1685,7 @@ function endSection(){
 
   const session={
     date:new Date().toISOString(),level:S.level,levelName:LEVELS[S.level].name,
+    topic:S.topic,topicName:TOPICS[S.topic]?.name||S.topic,
     section:sec,score:cor,total:20,accuracy:acc,
     timeMs:S.totalElapsed,avgTime:Math.round(S.totalElapsed/20/100)/10,
     maxCombo:S.maxCombo,xpEarned:S.sessionXP,answers:S.answers
@@ -1552,6 +1702,11 @@ function endSection(){
   if(S.totalElapsed>0)stats.fastestTime=Math.min(stats.fastestTime||Infinity,S.totalElapsed);
   if(S.level===4)stats.completedLevel4=true;
   stats.dayStreak=stats.dayStreak||1;
+  // Track per-topic sessions
+  if(!stats.topicSessions)stats.topicSessions={};
+  stats.topicSessions[S.topic]=(stats.topicSessions[S.topic]||0)+1;
+  // Count distinct topics with at least 1 session
+  stats.topicsCompleted=Object.keys(stats.topicSessions||{}).filter(t=>stats.topicSessions[t]>0).length;
   const newLv=xpLevel(stats.totalXP);
   saveStats(stats);
 
@@ -1568,7 +1723,7 @@ function showResults(session,newBadges){
   $('xp-burst').textContent='+'+S.sessionXP+' XP';
   const headlines={100:'Perfect! 🎉',90:'Excellent!',80:'Great Job!',70:'Good Work!',0:'Keep Going!'};
   $('r-headline').textContent=headlines[band];
-  $('r-sub').textContent=`Section ${session.section} · Level ${session.level}`;
+  $('r-sub').textContent=`${session.topicName||''} · Section ${session.section} · Lv ${session.level}`;
   $('r-score').textContent=`${session.score}/20`;
   $('r-acc').textContent=`${session.accuracy}%`;
   $('r-time').textContent=fmtTime(session.timeMs);
@@ -1587,7 +1742,7 @@ function showResults(session,newBadges){
     const q=S.questions[i];
     const d=document.createElement('div');
     d.className='rev-row';
-    d.innerHTML=`<span>${a.correct?'✓':'✗'}</span><span class="rev-eq">${q.dividend} ÷ ${q.divisor} =</span><span class="rev-ans ${a.correct?'correct':'wrong'}">${a.given}</span>${!a.correct?`<span class="rev-hint">(${q.answer})</span>`:''}`;
+    d.innerHTML=`<span>${a.correct?'✓':'✗'}</span><span class="rev-eq">${q.display} =</span><span class="rev-ans ${a.correct?'correct':'wrong'}">${a.given}</span>${!a.correct?`<span class="rev-hint">(${q.answer})</span>`:''}`;
     rl.appendChild(d);
   });
 
@@ -1701,7 +1856,8 @@ function renderHistory(){
   sessions.forEach(s=>{
     const d=new Date(s.date);
     const el=document.createElement('div');el.className='hist-item';
-    el.innerHTML=`<div class="hi-circle" style="background:${['','#d1f5db','#fff8cc','#ffe5b4','#eed6f7'][s.level]}">${LEVELS[s.level].emoji}</div><div class="hi-body"><div class="hi-title">${s.levelName} · Section ${s.section}</div><div class="hi-sub">${d.toLocaleDateString(undefined,{month:'short',day:'numeric'})} ${d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})} · ${fmtTime(s.timeMs)}</div></div><div class="hi-score">${s.accuracy}%</div>`;
+    const topicLabel = s.topicName || s.levelName || '';
+    el.innerHTML=`<div class="hi-circle" style="background:${['','#d1f5db','#fff8cc','#ffe5b4','#eed6f7'][s.level]}">${LEVELS[s.level]?.emoji||'📚'}</div><div class="hi-body"><div class="hi-title">${topicLabel} · ${s.levelName} · ${s.section}</div><div class="hi-sub">${d.toLocaleDateString(undefined,{month:'short',day:'numeric'})} ${d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})} · ${fmtTime(s.timeMs)}</div></div><div class="hi-score">${s.accuracy}%</div>`;
     list.appendChild(el);
   });
 }
@@ -1724,12 +1880,43 @@ function renderBests(){
 function loadSessions(){return loadSess();}
 
 // ── Event listeners ────────────────────────────────────────────────────────────
+// Topic chip selection
+document.querySelectorAll('.topic-chip').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    document.querySelectorAll('.topic-chip').forEach(x=>x.classList.remove('selected'));
+    chip.classList.add('selected');
+    S.topic=chip.dataset.topic;
+    updateLevelDescriptions();
+  });
+  chip.addEventListener('touchend',e=>{
+    e.preventDefault();
+    document.querySelectorAll('.topic-chip').forEach(x=>x.classList.remove('selected'));
+    chip.classList.add('selected');
+    S.topic=chip.dataset.topic;
+    updateLevelDescriptions();
+  });
+});
+
+// Level card selection
 document.querySelectorAll('.lcard').forEach(c=>{
   c.addEventListener('click',()=>{
     document.querySelectorAll('.lcard').forEach(x=>x.classList.remove('selected'));
     c.classList.add('selected');S.level=parseInt(c.dataset.level);
   });
+  c.addEventListener('touchend',e=>{
+    e.preventDefault();
+    document.querySelectorAll('.lcard').forEach(x=>x.classList.remove('selected'));
+    c.classList.add('selected');S.level=parseInt(c.dataset.level);
+  });
 });
+
+function updateLevelDescriptions(){
+  const descs=TOPIC_LEVEL_DESC[S.topic]||['','','',''];
+  [1,2,3,4].forEach(i=>{
+    const el=document.getElementById('lcard-desc-'+i);
+    if(el) el.textContent=descs[i-1]||'';
+  });
+}
 
 $('btn-start').addEventListener('click',()=>startPractice());
 $('btn-progress-icon').addEventListener('click',()=>{renderProgress();showScreen('progress');});
@@ -1750,7 +1937,7 @@ document.querySelectorAll('.nk').forEach(btn=>{
 
 $('btn-retry').addEventListener('click',()=>startPractice());
 $('btn-next-section').addEventListener('click',()=>{S.sectionIdx++;startPractice();});
-$('btn-results-home').addEventListener('click',()=>{refreshHomeProfile();refreshXPBar();renderAchRow();const _s=loadStats();$('streak-count').textContent=_s.dayStreak||0;showScreen('home');});
+$('btn-results-home').addEventListener('click',()=>{refreshHomeProfile();refreshXPBar();renderAchRow();updateLevelDescriptions();const _s=loadStats();$('streak-count').textContent=_s.dayStreak||0;showScreen('home');});
 $('review-toggle').addEventListener('click',()=>{
   const rl=$('review-list');const open=rl.classList.toggle('open');
   $('review-toggle').textContent=open?'Hide ▴':'Show ▾';
@@ -1789,17 +1976,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Backspace'){S.input='';$('num-display').textContent='_';}
 });
 
-// ── Service Worker registration ──────────────────────────────────────────────
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js', { scope: './' })
-      .then(reg => {
-        // Check for updates every time the page loads
-        reg.update();
-      })
-      .catch(err => console.warn('SW registration failed:', err));
-  });
-}
+
 
 
 
@@ -2069,6 +2246,7 @@ $('pedit-name').addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDe
     refreshHomeProfile();
     refreshXPBar();
     renderAchRow();
+    updateLevelDescriptions();
     const stats = loadStats();
     $('streak-count').textContent = stats.dayStreak||0;
     showScreen('home');
@@ -2076,13 +2254,39 @@ $('pedit-name').addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDe
 })();
 
 // ══════════════════════════════════════════════════════════════
-// SERVICE WORKER
+// SERVICE WORKER — auto-update on every deploy
+// The SW file itself uses a VERSION constant. When sw.js changes
+// on the server, the browser detects it (byte-diff), installs the
+// new SW, and skipWaiting() activates it immediately. clients.claim()
+// then takes over the open tab without needing a second reload.
 // ══════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js', { scope: './' })
-      .then(reg => reg.update())
+    navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })
+      .then(reg => {
+        // Force an update check on every page load
+        reg.update();
+
+        // When a new SW is waiting, activate it immediately
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'activated') {
+              // New SW is active — refresh to get latest assets
+              window.location.reload();
+            }
+          });
+        });
+      })
       .catch(err => console.warn('SW failed:', err));
+
+    // Also handle the case where a SW was waiting before this page loaded
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+    }
   });
 }
 
