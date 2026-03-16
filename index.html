@@ -1348,32 +1348,39 @@ canvas{width:100%;height:auto;display:block}
   <div class="igm-sheet">
     <div class="igm-handle"></div>
     <div class="igm-title">📲 Install Kids Math</div>
-    <div class="igm-sub">Add to your Android home screen</div>
-
-    <div class="igm-prompt-note">
-      ⚡ If Chrome shows an "Install app" prompt at the bottom of your screen — tap it! Otherwise follow the steps below.
-    </div>
+    <div class="igm-sub" id="igm-status">Follow these steps in Chrome</div>
 
     <div class="igm-steps">
       <div class="igm-step">
         <div class="igm-num">1</div>
-        <div class="igm-text">Open this page in <b>Google Chrome</b> (not Samsung Browser or Firefox)</div>
+        <div class="igm-text">Make sure you are using <b>Google Chrome</b> — not Samsung Browser, Firefox, or Edge</div>
       </div>
       <div class="igm-step">
         <div class="igm-num">2</div>
-        <div class="igm-text">Tap the <b>⋮ three-dot menu</b> in the top-right corner of Chrome</div>
+        <div class="igm-text">Tap the <b>⋮ menu</b> at the top-right of Chrome</div>
       </div>
       <div class="igm-step">
         <div class="igm-num">3</div>
-        <div class="igm-text">Tap <b>"Add to Home screen"</b> or <b>"Install app"</b></div>
+        <div class="igm-text">Tap <b>"Add to Home screen"</b> — then tap <b>"Add"</b> to confirm</div>
       </div>
       <div class="igm-step">
         <div class="igm-num">4</div>
-        <div class="igm-text">Tap <b>"Add"</b> or <b>"Install"</b> to confirm</div>
+        <div class="igm-text">If you don't see "Add to Home screen", <b>reload the page once</b> and try again — Chrome needs a moment to prepare the install</div>
       </div>
     </div>
 
-    <button id="install-guide-close">Got it ✓</button>
+    <div class="igm-prompt-note" id="igm-prompt-ready" style="display:none">
+      ✅ Chrome is ready to install! Tap the button below.
+    </div>
+
+    <button id="igm-native-btn" style="
+      width:100%;padding:15px;background:#007aff;color:#fff;
+      font-family:inherit;font-size:16px;font-weight:800;
+      border:none;border-radius:14px;cursor:pointer;margin-bottom:10px;
+      display:none;
+    ">Install Now ✦</button>
+
+    <button id="install-guide-close">Done</button>
   </div>
 </div>
 
@@ -2486,20 +2493,49 @@ if ('serviceWorker' in navigator) {
 // ══════════════════════════════════════════════════════════════
 // ANDROID INSTALL — single clean block, no duplicates
 // ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// INSTALL — Android PWA
+// beforeinstallprompt fires when Chrome decides the app is
+// installable. Until then, we show manual instructions.
+// Criteria: HTTPS + valid manifest + SW registered + not installed
+// Note: Chrome may require 2+ visits before firing the event.
+// ══════════════════════════════════════════════════════════
 let deferredPrompt = null;
 
-const banner     = $('install-banner');
-const installRow = $('install-row');
-const installBtn = $('ib-install-btn');
-const dismissBtn = $('ib-dismiss-btn');
-const guideModal = $('install-guide-modal');
-const guideClose = $('install-guide-close');
+const banner      = $('install-banner');
+const installRow  = $('install-row');
+const installBtn  = $('ib-install-btn');
+const dismissBtn  = $('ib-dismiss-btn');
+const guideModal  = $('install-guide-modal');
+const guideClose  = $('install-guide-close');
+const igmNativeBtn = $('igm-native-btn');
+const igmReady    = $('igm-prompt-ready');
 
 const isStandalone = () =>
   window.matchMedia('(display-mode: standalone)').matches ||
   window.navigator.standalone === true;
 
-// Show/hide the slide-up banner
+// Update UI when prompt is/isn't available
+function updateInstallUI() {
+  if (isStandalone()) {
+    // Already installed — hide everything
+    if (installRow) installRow.style.display = 'none';
+    if (banner)     hideBanner();
+    return;
+  }
+  if (deferredPrompt) {
+    // Native prompt ready — show the Install Now button inside the guide
+    if (igmNativeBtn) igmNativeBtn.style.display = 'block';
+    if (igmReady)     igmReady.style.display = 'block';
+    // Also update the install row label
+    const irTitle = installRow && installRow.querySelector('.ir-title');
+    if (irTitle) irTitle.textContent = 'Install Kids Math ✦';
+  } else {
+    if (igmNativeBtn) igmNativeBtn.style.display = 'none';
+    if (igmReady)     igmReady.style.display = 'none';
+  }
+}
+
 function showBanner() {
   if (!banner || isStandalone()) return;
   banner.style.transform = 'translateY(0)';
@@ -2508,54 +2544,58 @@ function hideBanner() {
   if (banner) banner.style.transform = 'translateY(110%)';
 }
 
-// Show the in-app step-by-step guide modal
 function showGuide() {
+  updateInstallUI(); // refresh state when opening
   if (guideModal) guideModal.classList.add('open');
 }
 function hideGuide() {
   if (guideModal) guideModal.classList.remove('open');
 }
 
-// Trigger the native Android install prompt
 async function triggerNativeInstall() {
-  if (!deferredPrompt) return false;
+  if (!deferredPrompt) { showGuide(); return; }
   hideBanner();
   hideGuide();
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  deferredPrompt = null;
-  return outcome === 'accepted';
+  try {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    if (outcome === 'accepted') {
+      if (installRow) installRow.style.display = 'none';
+    }
+  } catch(e) {
+    console.warn('Install prompt error:', e);
+    deferredPrompt = null;
+    showGuide(); // Fall back to manual instructions
+  }
 }
 
-// What happens when user taps the install row or banner button
 function onInstallTap() {
   if (deferredPrompt) {
-    // Native prompt is ready — fire it immediately
     triggerNativeInstall();
   } else {
-    // Prompt not ready yet — show manual guide
     showGuide();
   }
 }
 
-// Chrome fires this when all PWA criteria are met
+// Chrome fires this when the app becomes installable
 window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();         // suppress mini-infobar
+  e.preventDefault();
   deferredPrompt = e;
-  console.log('beforeinstallprompt captured');
+  console.log('[PWA] beforeinstallprompt captured — install ready');
+  updateInstallUI();
   setTimeout(showBanner, 1200);
 });
 
-// Fires after successful install
 window.addEventListener('appinstalled', () => {
+  console.log('[PWA] App installed successfully');
   hideBanner();
   hideGuide();
   deferredPrompt = null;
   if (installRow) installRow.style.display = 'none';
-  console.log('App installed!');
 });
 
-// Install row on home screen
+// Wire install row
 if (installRow) {
   if (isStandalone()) {
     installRow.style.display = 'none';
@@ -2565,7 +2605,7 @@ if (installRow) {
   }
 }
 
-// Slide-up banner buttons
+// Wire banner buttons
 if (installBtn) {
   installBtn.addEventListener('click', onInstallTap);
   installBtn.addEventListener('touchend', e => { e.preventDefault(); onInstallTap(); });
@@ -2575,7 +2615,11 @@ if (dismissBtn) {
   dismissBtn.addEventListener('touchend', e => { e.preventDefault(); hideBanner(); });
 }
 
-// Guide modal close
+// Wire guide modal buttons
+if (igmNativeBtn) {
+  igmNativeBtn.addEventListener('click', triggerNativeInstall);
+  igmNativeBtn.addEventListener('touchend', e => { e.preventDefault(); triggerNativeInstall(); });
+}
 if (guideClose) {
   guideClose.addEventListener('click', hideGuide);
   guideClose.addEventListener('touchend', e => { e.preventDefault(); hideGuide(); });
@@ -2585,6 +2629,9 @@ if (guideModal) {
     if (e.target === guideModal) hideGuide();
   });
 }
+
+// Run on load to set initial state
+updateInstallUI();
 
 // ResizeObserver + orientation fallback
 const practiceScreen = $('screen-practice');
