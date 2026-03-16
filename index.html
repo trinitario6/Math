@@ -1377,6 +1377,46 @@ canvas{width:100%;height:auto;display:block}
   </div>
 </div>
 
+<!-- Install banner — slides up from bottom when prompt is ready -->
+<div id="install-banner">
+  <div class="ib-icon">📲</div>
+  <div class="ib-text">
+    <div class="ib-title">Install Kids Math</div>
+    <div class="ib-sub">Add to home screen · Works offline</div>
+  </div>
+  <div class="ib-actions">
+    <button class="ib-install" id="ib-install-btn">Install</button>
+    <button class="ib-dismiss" id="ib-dismiss-btn">Not now</button>
+  </div>
+</div>
+
+<!-- Pause / Exit modal -->
+<div id="pause-modal">
+  <div class="pause-sheet">
+    <span class="pause-icon">⏸️</span>
+    <h2 class="pause-title">Session Paused</h2>
+    <p class="pause-sub" id="pause-sub">You've answered <span id="pause-answered">0</span> of 20 questions</p>
+    <div class="pause-stats">
+      <div class="pause-stat">
+        <div class="pause-stat-val" id="pause-score">0</div>
+        <div class="pause-stat-lbl">Correct</div>
+      </div>
+      <div class="pause-stat">
+        <div class="pause-stat-val" id="pause-acc">—</div>
+        <div class="pause-stat-lbl">Accuracy</div>
+      </div>
+      <div class="pause-stat">
+        <div class="pause-stat-val" id="pause-time">0:00</div>
+        <div class="pause-stat-lbl">Time</div>
+      </div>
+    </div>
+    <div class="pause-actions">
+      <button class="btn-pause-resume" id="btn-pause-resume">▶ Resume Session</button>
+      <button class="btn-pause-abandon" id="btn-pause-abandon">✕ Abandon Session</button>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
 // ── Config ──────────────────────────────────────────────────────────────────
@@ -2560,48 +2600,5 @@ window.addEventListener('orientationchange', () => {
 });
 
 </script>
-
-
-
-<!-- Install banner — slides up from bottom when prompt is ready -->
-<div id="install-banner">
-  <div class="ib-icon">📲</div>
-  <div class="ib-text">
-    <div class="ib-title">Install Kids Math</div>
-    <div class="ib-sub">Add to home screen · Works offline</div>
-  </div>
-  <div class="ib-actions">
-    <button class="ib-install" id="ib-install-btn">Install</button>
-    <button class="ib-dismiss" id="ib-dismiss-btn">Not now</button>
-  </div>
-</div>
-
-<!-- Pause / Exit modal -->
-<div id="pause-modal">
-  <div class="pause-sheet">
-    <span class="pause-icon">⏸️</span>
-    <h2 class="pause-title">Session Paused</h2>
-    <p class="pause-sub" id="pause-sub">You've answered <span id="pause-answered">0</span> of 20 questions</p>
-    <div class="pause-stats">
-      <div class="pause-stat">
-        <div class="pause-stat-val" id="pause-score">0</div>
-        <div class="pause-stat-lbl">Correct</div>
-      </div>
-      <div class="pause-stat">
-        <div class="pause-stat-val" id="pause-acc">—</div>
-        <div class="pause-stat-lbl">Accuracy</div>
-      </div>
-      <div class="pause-stat">
-        <div class="pause-stat-val" id="pause-time">0:00</div>
-        <div class="pause-stat-lbl">Time</div>
-      </div>
-    </div>
-    <div class="pause-actions">
-      <button class="btn-pause-resume" id="btn-pause-resume">▶ Resume Session</button>
-      <button class="btn-pause-abandon" id="btn-pause-abandon">✕ Abandon Session</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
