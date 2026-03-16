@@ -239,22 +239,33 @@ body{
 }
 
 .p-topbar{
-  display:flex;align-items:center;justify-content:space-between;
+  display:grid;
+  grid-template-columns:40px 1fr 40px;
+  align-items:center;
+  gap:8px;
   padding:max(env(safe-area-inset-top,16px),16px) 16px 10px;
   flex-shrink:0;background:#f2f2f7;
   position:relative;z-index:1;
 }
-.hearts-row{display:flex;gap:3px}
-.heart{font-size:22px;transition:all .3s}
-.heart.lost{filter:grayscale(1) opacity(.3);transform:scale(.75)}
 .timer-chip{
   background:#fff;border:1.5px solid #e5e5ea;
-  border-radius:99px;padding:6px 14px;
-  font-size:16px;font-weight:900;color:#3a3a3c;
+  border-radius:99px;padding:7px 18px;
+  font-size:18px;font-weight:900;color:#3a3a3c;
   box-shadow:0 2px 8px rgba(0,0,0,.07);
-  min-width:62px;text-align:center;
+  text-align:center;justify-self:center;
   font-variant-numeric:tabular-nums;
+  letter-spacing:.02em;
 }
+.btn-pause-icon{
+  background:#fff;border:1.5px solid rgba(0,0,0,.08);
+  border-radius:50%;width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,.07);
+  border:none;justify-self:end;
+  transition:transform .15s;
+}
+.btn-pause-icon:active{transform:scale(.88)}
 
 .p-prog-bar{
   height:7px;background:#e5e5ea;
@@ -951,6 +962,63 @@ canvas{width:100%;height:auto;display:block}
 .tc-name{font-size:11px;font-weight:800;color:#3a3a3c;text-align:center}
 .topic-chip.selected .tc-name{color:#007aff}
 
+
+/* ══════════════════════════════
+   PAUSE MODAL
+══════════════════════════════ */
+/* ── Full-screen pause overlay ── */
+#pause-modal{
+  position:fixed;inset:0;z-index:700;
+  background:#f2f2f7;
+  display:none;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:24px 24px max(env(safe-area-inset-bottom,24px),24px);
+  pointer-events:none;
+}
+#pause-modal.open{display:flex;pointer-events:all;}
+.pause-sheet{
+  width:100%;max-width:360px;
+  display:flex;flex-direction:column;align-items:center;gap:0;
+}
+.pause-icon{font-size:56px;text-align:center;display:block;margin-bottom:14px;
+  animation:pause-pop .35s cubic-bezier(.34,1.8,.64,1) both;}
+@keyframes pause-pop{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
+.pause-title{
+  font-size:28px;font-weight:900;color:#1c1c1e;
+  text-align:center;margin-bottom:4px;
+}
+.pause-sub{
+  font-size:14px;font-weight:600;color:#8e8e93;
+  text-align:center;margin-bottom:24px;
+}
+.pause-stats{
+  display:flex;gap:10px;margin-bottom:28px;width:100%;
+}
+.pause-stat{
+  flex:1;background:#fff;border-radius:16px;
+  padding:14px 8px;text-align:center;
+  box-shadow:0 2px 10px rgba(0,0,0,.07);
+  border:1.5px solid rgba(0,0,0,.06);
+}
+.pause-stat-val{font-size:22px;font-weight:900;color:#1c1c1e}
+.pause-stat-lbl{font-size:10px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
+.pause-actions{display:flex;flex-direction:column;gap:10px;width:100%}
+.btn-pause-resume{
+  width:100%;padding:17px;background:#007aff;color:#fff;
+  font-family:inherit;font-size:17px;font-weight:900;
+  border:none;border-radius:99px;cursor:pointer;
+  box-shadow:0 6px 20px rgba(0,122,255,.35);
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1),box-shadow .15s;
+}
+.btn-pause-resume:active{transform:scale(.96);box-shadow:0 2px 8px rgba(0,122,255,.2)}
+.btn-pause-abandon{
+  width:100%;padding:15px;background:transparent;color:#ff3b30;
+  font-family:inherit;font-size:15px;font-weight:800;
+  border:2px solid rgba(255,59,48,.25);border-radius:99px;cursor:pointer;
+  transition:background .15s;
+}
+.btn-pause-abandon:active{background:#ffd6d4}
+
 </style>
 </head>
 <body>
@@ -1067,12 +1135,8 @@ canvas{width:100%;height:auto;display:block}
 <div id="screen-practice" class="screen">
   <div class="p-topbar">
     <button class="icon-btn" id="btn-back">‹</button>
-    <div class="hearts-row">
-      <span class="heart" id="h1">❤️</span>
-      <span class="heart" id="h2">❤️</span>
-      <span class="heart" id="h3">❤️</span>
-    </div>
     <div class="timer-chip" id="stopwatch">0:00</div>
+    <button class="btn-pause-icon" id="btn-pause-session" aria-label="Pause">⏸</button>
   </div>
 
   <div class="p-prog-bar"><div class="p-prog-fill" id="p-prog-fill"></div></div>
@@ -1920,9 +1984,84 @@ function updateLevelDescriptions(){
 
 $('btn-start').addEventListener('click',()=>startPractice());
 $('btn-progress-icon').addEventListener('click',()=>{renderProgress();showScreen('progress');});
+// ── Pause / Exit logic ───────────────────────────────────────────────────────
+function openPauseModal(){
+  // Pause the timer
+  stopTimer();
+  // Pause any pending feedback timeout
+  if(S.feedTO){ clearTimeout(S.feedTO); S.feedTO=null; }
+
+  // Fill in current stats
+  const answered = S.answers.length;
+  const correct  = S.answers.filter(a=>a.correct).length;
+  const acc      = answered ? Math.round(correct/answered*100)+'%' : '—';
+  $('pause-answered').textContent = answered;
+  $('pause-score').textContent    = correct;
+  $('pause-acc').textContent      = acc;
+  $('pause-time').textContent     = fmtTimer(S.totalElapsed);
+
+  $('pause-modal').classList.add('open');
+}
+
+function closePauseModal(){
+  $('pause-modal').classList.remove('open');
+}
+
+function resumeSession(){
+  closePauseModal();
+  // Restart timer from where it left off
+  startTimer();
+  // If we were mid-feedback-delay, reload the next question
+  if(S.current < 20 && S.answers.length === S.current){
+    // Question unanswered — just re-enable the submit button
+    $('nk-go').disabled = false;
+  } else if(S.current < 20){
+    // Feedback was showing — move to next question
+    loadQ();
+  }
+}
+
+function abandonSession(){
+  closePauseModal();
+  stopTimer();
+  // Reset state fully
+  S.questions=[];S.current=0;S.answers=[];S.input='';
+  S.combo=0;S.maxCombo=0;S.sessionXP=0;S.hearts=3;
+  S.totalElapsed=0;S.timerStart=null;
+  $('stopwatch').textContent='0:00';
+  showScreen('home');
+}
+
 $('btn-back').addEventListener('click',()=>{
-  stopTimer();if(S.feedTO)clearTimeout(S.feedTO);showScreen('home');
+  if(S.screen === 'practice' && S.answers.length > 0){
+    openPauseModal();
+  } else {
+    // No questions answered yet — just go back without prompting
+    stopTimer();
+    if(S.feedTO)clearTimeout(S.feedTO);
+    showScreen('home');
+  }
 });
+
+// Pause button in practice topbar
+const btnPauseSession = $('btn-pause-session');
+if(btnPauseSession){
+  btnPauseSession.addEventListener('click', openPauseModal);
+  btnPauseSession.addEventListener('touchend', e=>{ e.preventDefault(); openPauseModal(); });
+}
+$('btn-pause-resume').addEventListener('click', resumeSession);
+$('btn-pause-resume').addEventListener('touchend', e=>{ e.preventDefault(); resumeSession(); });
+$('btn-pause-abandon').addEventListener('click', abandonSession);
+$('btn-pause-abandon').addEventListener('touchend', e=>{ e.preventDefault(); abandonSession(); });
+// Tap backdrop to resume
+// Tapping anywhere on the full-screen overlay resumes (except the sheet buttons)
+$('pause-modal').addEventListener('click', e=>{
+  // Only resume if they clicked outside the pause-sheet content area
+  if(e.target === $('pause-modal') || e.target.classList.contains('pause-sheet')){
+    resumeSession();
+  }
+});
+
 
 // Numpad — both click and touchstart for Android reliability
 function handleKey(v){
@@ -2422,5 +2561,33 @@ window.addEventListener('orientationchange', () => {
     <button class="ib-dismiss" id="ib-dismiss-btn">Not now</button>
   </div>
 </div>
+
+<!-- Pause / Exit modal -->
+<div id="pause-modal">
+  <div class="pause-sheet">
+    <span class="pause-icon">⏸️</span>
+    <h2 class="pause-title">Session Paused</h2>
+    <p class="pause-sub" id="pause-sub">You've answered <span id="pause-answered">0</span> of 20 questions</p>
+    <div class="pause-stats">
+      <div class="pause-stat">
+        <div class="pause-stat-val" id="pause-score">0</div>
+        <div class="pause-stat-lbl">Correct</div>
+      </div>
+      <div class="pause-stat">
+        <div class="pause-stat-val" id="pause-acc">—</div>
+        <div class="pause-stat-lbl">Accuracy</div>
+      </div>
+      <div class="pause-stat">
+        <div class="pause-stat-val" id="pause-time">0:00</div>
+        <div class="pause-stat-lbl">Time</div>
+      </div>
+    </div>
+    <div class="pause-actions">
+      <button class="btn-pause-resume" id="btn-pause-resume">▶ Resume Session</button>
+      <button class="btn-pause-abandon" id="btn-pause-abandon">✕ Abandon Session</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
