@@ -599,10 +599,15 @@ canvas{width:100%;height:auto;display:block}
 /* ── Modal ── */
 .modal-overlay{
   position:fixed;inset:0;z-index:100;
-  background:rgba(0,0,0,.35);backdrop-filter:blur(8px);
-  -webkit-backdrop-filter:blur(8px);
-  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.35);
+  align-items:center;justify-content:center;
   padding:20px;
+  display:none;
+  pointer-events:none;
+}
+.modal-overlay.open{
+  display:flex;pointer-events:all;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
 }
 .modal-card{
   background:#fff;border-radius:24px;
@@ -705,10 +710,15 @@ canvas{width:100%;height:auto;display:block}
 /* ── Profile Edit Modal ── */
 .pedit-overlay{
   position:fixed;inset:0;z-index:200;
-  background:rgba(0,0,0,.4);backdrop-filter:blur(10px);
-  -webkit-backdrop-filter:blur(10px);
-  display:flex;align-items:flex-end;justify-content:center;
+  background:rgba(0,0,0,.4);
+  align-items:flex-end;justify-content:center;
   padding:0;
+  display:none;
+  pointer-events:none;
+}
+.pedit-overlay.open{
+  display:flex;pointer-events:all;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
 }
 .pedit-sheet{
   background:#fff;
@@ -827,9 +837,13 @@ canvas{width:100%;height:auto;display:block}
 /* ── iOS install instructions modal ── */
 .ios-modal-overlay{
   position:fixed;inset:0;z-index:400;
-  background:rgba(0,0,0,.45);backdrop-filter:blur(8px);
-  -webkit-backdrop-filter:blur(8px);
-  display:flex;align-items:flex-end;justify-content:center;
+  background:rgba(0,0,0,.45);
+  align-items:flex-end;justify-content:center;
+  display:none;pointer-events:none;
+}
+.ios-modal-overlay.open{
+  display:flex;pointer-events:all;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
 }
 .ios-modal-sheet{
   background:#fff;border-radius:24px 24px 0 0;
@@ -1274,7 +1288,7 @@ canvas{width:100%;height:auto;display:block}
 </div>
 
 <!-- LEVEL UP MODAL -->
-<div class="modal-overlay" id="modal-levelup" style="display:none">
+<div class="modal-overlay" id="modal-levelup">
   <div class="modal-card">
     <div class="mo-star">⭐</div>
     <h3>Level Up!</h3>
@@ -1302,7 +1316,7 @@ canvas{width:100%;height:auto;display:block}
 </div>
 
 <!-- Profile edit bottom sheet -->
-<div class="pedit-overlay" id="pedit-overlay" style="display:none">
+<div class="pedit-overlay" id="pedit-overlay">
   <div class="pedit-sheet">
     <div class="pedit-handle"></div>
     <div class="pedit-avatar-wrap">
@@ -1775,7 +1789,7 @@ function endSection(){
   saveStats(stats);
 
   const newBadges=checkAch(stats);
-  if(newLv>prevLv){$('modal-lvl').textContent=newLv;$('modal-levelup').style.display='flex';}
+  if(newLv>prevLv){$('modal-lvl').textContent=newLv;$('modal-levelup').classList.add('open');}
   showResults(session,newBadges);
 }
 
@@ -2093,7 +2107,7 @@ $('btn-clear').addEventListener('click',()=>{
     renderProgress();refreshXPBar();$('streak-count').textContent='0';
   }
 });
-$('btn-dismiss-levelup').addEventListener('click',()=>$('modal-levelup').style.display='none');
+$('btn-dismiss-levelup').addEventListener('click',()=>$('modal-levelup').classList.remove('open'));
 
 document.querySelectorAll('.seg-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{
@@ -2274,12 +2288,12 @@ function openProfileEditor(profileId){
     picker.querySelector('.emoji-opt').classList.add('selected');
   }
 
-  $('pedit-overlay').style.display = 'flex';
+  $('pedit-overlay').classList.add('open');
   setTimeout(()=>$('pedit-name').focus(), 350);
 }
 
 function closeProfileEditor(){
-  $('pedit-overlay').style.display = 'none';
+  $('pedit-overlay').classList.remove('open');
   pendingPhoto = null;
   editingProfileId = null;
 }
