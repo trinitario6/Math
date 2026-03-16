@@ -860,6 +860,67 @@ canvas{width:100%;height:auto;display:block}
 }
 .ios-modal-close:active{background:#e5e5ea}
 
+
+/* ── Android install guide modal ── */
+#install-guide-modal {
+  position:fixed;inset:0;z-index:600;
+  background:rgba(0,0,0,.5);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  display:none;align-items:flex-end;justify-content:center;
+}
+.igm-sheet {
+  background:#fff;width:100%;max-width:480px;
+  border-radius:24px 24px 0 0;
+  padding:20px 20px max(env(safe-area-inset-bottom,20px),20px);
+  animation:sheet-up .3s cubic-bezier(.34,1.4,.64,1);
+}
+.igm-handle {
+  width:36px;height:4px;border-radius:2px;
+  background:#e5e5ea;margin:0 auto 16px;
+}
+.igm-title {
+  font-size:18px;font-weight:900;color:#1c1c1e;
+  text-align:center;margin-bottom:4px;
+}
+.igm-sub {
+  font-size:13px;font-weight:600;color:#8e8e93;
+  text-align:center;margin-bottom:18px;
+}
+.igm-steps {
+  display:flex;flex-direction:column;gap:10px;margin-bottom:18px;
+}
+.igm-step {
+  display:flex;align-items:flex-start;gap:12px;
+  background:#f2f2f7;border-radius:12px;padding:12px 14px;
+}
+.igm-num {
+  width:26px;height:26px;border-radius:50%;flex-shrink:0;
+  background:#007aff;color:#fff;
+  font-size:13px;font-weight:900;
+  display:flex;align-items:center;justify-content:center;
+  margin-top:1px;
+}
+.igm-text {
+  font-size:13px;font-weight:700;color:#1c1c1e;line-height:1.4;
+}
+.igm-text b { color:#007aff;font-weight:900; }
+.igm-or {
+  text-align:center;font-size:12px;font-weight:700;
+  color:#aeaeb2;margin:4px 0 10px;
+}
+.igm-prompt-note {
+  background:#d4e8ff;border-radius:10px;padding:10px 14px;
+  font-size:12px;font-weight:700;color:#0055b3;
+  text-align:center;margin-bottom:14px;line-height:1.4;
+}
+#install-guide-close {
+  width:100%;padding:14px;background:#f2f2f7;
+  border:none;border-radius:12px;
+  font-family:inherit;font-size:15px;font-weight:800;color:#3a3a3c;
+  cursor:pointer;
+}
+#install-guide-close:active{background:#e5e5ea}
+
 </style>
 </head>
 <body>
@@ -1751,53 +1812,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// ── Install banner (beforeinstallprompt) ──────────────────────────────────────
-let deferredPrompt = null;
-const installBanner  = document.getElementById('install-banner');
-const installBtn     = document.getElementById('ib-install-btn');
-const dismissBtn     = document.getElementById('ib-dismiss-btn');
-
-function showInstallBanner() {
-  if (!installBanner) return;
-  // Don't show if already installed or dismissed this session
-  if (sessionStorage.getItem('ib-dismissed')) return;
-  if (window.matchMedia('(display-mode: standalone)').matches) return;
-  requestAnimationFrame(() => installBanner.classList.add('visible'));
-}
-
-function hideInstallBanner() {
-  if (!installBanner) return;
-  installBanner.classList.remove('visible');
-}
-
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();           // stop mini-infobar
-  deferredPrompt = e;
-  // Slight delay so it doesn't appear before the app renders
-  setTimeout(showInstallBanner, 2500);
-});
-
-window.addEventListener('appinstalled', () => {
-  hideInstallBanner();
-  deferredPrompt = null;
-});
-
-if (installBtn) {
-  installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    hideInstallBanner();
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    deferredPrompt = null;
-  });
-}
-
-if (dismissBtn) {
-  dismissBtn.addEventListener('click', () => {
-    hideInstallBanner();
-    sessionStorage.setItem('ib-dismissed', '1');
-  });
-}
+// (install logic below)
 
 // ── ResizeObserver for layout reflow ─────────────────────────────────────────
 // Handles keyboard appearing/disappearing and orientation changes reliably
@@ -2109,20 +2124,22 @@ if ('serviceWorker' in navigator) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// ANDROID INSTALL PROMPT
-// Chrome fires beforeinstallprompt when:
-//   1. HTTPS  2. Valid manifest  3. Active SW  4. Not installed
+// ANDROID INSTALL — single clean block, no duplicates
 // ══════════════════════════════════════════════════════════════
 let deferredPrompt = null;
 
 const banner     = $('install-banner');
+const installRow = $('install-row');
 const installBtn = $('ib-install-btn');
 const dismissBtn = $('ib-dismiss-btn');
-const installRow = $('install-row');
+const guideModal = $('install-guide-modal');
+const guideClose = $('install-guide-close');
 
-const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches
-                        || window.navigator.standalone === true;
+const isStandalone = () =>
+  window.matchMedia('(display-mode: standalone)').matches ||
+  window.navigator.standalone === true;
 
+// Show/hide the slide-up banner
 function showBanner() {
   if (!banner || isStandalone()) return;
   banner.style.transform = 'translateY(0)';
@@ -2131,46 +2148,82 @@ function hideBanner() {
   if (banner) banner.style.transform = 'translateY(110%)';
 }
 
-async function triggerInstall() {
-  if (!deferredPrompt) return;
-  hideBanner();
-  deferredPrompt.prompt();
-  const result = await deferredPrompt.userChoice;
-  deferredPrompt = null;
+// Show the in-app step-by-step guide modal
+function showGuide() {
+  if (guideModal) guideModal.style.display = 'flex';
+}
+function hideGuide() {
+  if (guideModal) guideModal.style.display = 'none';
 }
 
+// Trigger the native Android install prompt
+async function triggerNativeInstall() {
+  if (!deferredPrompt) return false;
+  hideBanner();
+  hideGuide();
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  return outcome === 'accepted';
+}
+
+// What happens when user taps the install row or banner button
+function onInstallTap() {
+  if (deferredPrompt) {
+    // Native prompt is ready — fire it immediately
+    triggerNativeInstall();
+  } else {
+    // Prompt not ready yet — show manual guide
+    showGuide();
+  }
+}
+
+// Chrome fires this when all PWA criteria are met
 window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
+  e.preventDefault();         // suppress mini-infobar
   deferredPrompt = e;
-  setTimeout(showBanner, 1500);
+  console.log('beforeinstallprompt captured');
+  setTimeout(showBanner, 1200);
 });
 
+// Fires after successful install
 window.addEventListener('appinstalled', () => {
   hideBanner();
+  hideGuide();
   deferredPrompt = null;
   if (installRow) installRow.style.display = 'none';
+  console.log('App installed!');
 });
 
+// Install row on home screen
+if (installRow) {
+  if (isStandalone()) {
+    installRow.style.display = 'none';
+  } else {
+    installRow.addEventListener('click', onInstallTap);
+    installRow.addEventListener('touchend', e => { e.preventDefault(); onInstallTap(); });
+  }
+}
+
+// Slide-up banner buttons
 if (installBtn) {
-  installBtn.addEventListener('click', triggerInstall);
-  installBtn.addEventListener('touchend', e => { e.preventDefault(); triggerInstall(); });
+  installBtn.addEventListener('click', onInstallTap);
+  installBtn.addEventListener('touchend', e => { e.preventDefault(); onInstallTap(); });
 }
 if (dismissBtn) {
   dismissBtn.addEventListener('click', hideBanner);
   dismissBtn.addEventListener('touchend', e => { e.preventDefault(); hideBanner(); });
 }
 
-if (installRow) {
-  if (isStandalone()) installRow.style.display = 'none';
-  const doInstall = () => {
-    if (deferredPrompt) {
-      triggerInstall();
-    } else {
-      alert('To install:\n\nOpen this page in Chrome, tap the \u22ee menu (top-right) then "Add to Home screen".');
-    }
-  };
-  installRow.addEventListener('click', doInstall);
-  installRow.addEventListener('touchend', e => { e.preventDefault(); doInstall(); });
+// Guide modal close
+if (guideClose) {
+  guideClose.addEventListener('click', hideGuide);
+  guideClose.addEventListener('touchend', e => { e.preventDefault(); hideGuide(); });
+}
+if (guideModal) {
+  guideModal.addEventListener('click', e => {
+    if (e.target === guideModal) hideGuide();
+  });
 }
 
 // ResizeObserver + orientation fallback
@@ -2187,6 +2240,41 @@ window.addEventListener('orientationchange', () => {
 });
 
 </script>
+
+
+<!-- Android install guide modal -->
+<div id="install-guide-modal">
+  <div class="igm-sheet">
+    <div class="igm-handle"></div>
+    <div class="igm-title">📲 Install Kids Math</div>
+    <div class="igm-sub">Add to your Android home screen</div>
+
+    <div class="igm-prompt-note">
+      ⚡ If Chrome shows an "Install app" prompt at the bottom of your screen — tap it! Otherwise follow the steps below.
+    </div>
+
+    <div class="igm-steps">
+      <div class="igm-step">
+        <div class="igm-num">1</div>
+        <div class="igm-text">Open this page in <b>Google Chrome</b> (not Samsung Browser or Firefox)</div>
+      </div>
+      <div class="igm-step">
+        <div class="igm-num">2</div>
+        <div class="igm-text">Tap the <b>⋮ three-dot menu</b> in the top-right corner of Chrome</div>
+      </div>
+      <div class="igm-step">
+        <div class="igm-num">3</div>
+        <div class="igm-text">Tap <b>"Add to Home screen"</b> or <b>"Install app"</b></div>
+      </div>
+      <div class="igm-step">
+        <div class="igm-num">4</div>
+        <div class="igm-text">Tap <b>"Add"</b> or <b>"Install"</b> to confirm</div>
+      </div>
+    </div>
+
+    <button id="install-guide-close">Got it ✓</button>
+  </div>
+</div>
 
 </body>
 </html>
