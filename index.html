@@ -1362,28 +1362,52 @@ function genQ(level, topic){
   return qs;
 }
 
+// Weighted random pick: higher-index items get more weight at higher levels.
+// weightBias ranges 0 (flat) to 1 (heavily favour larger values).
+function weightedPick(arr, weightBias){
+  const n = arr.length;
+  // Weight[i] = 1 + bias * i  (last element has weight 1+bias*(n-1))
+  const weights = arr.map((_,i) => 1 + weightBias * i);
+  const total   = weights.reduce((s,w) => s+w, 0);
+  let r = Math.random() * total;
+  for(let i=0; i<n; i++){ r -= weights[i]; if(r<=0) return arr[i]; }
+  return arr[n-1];
+}
+
 function genOneQ(level, topic){
+  // weightBias by level: L1=0 (flat), L2=0.4, L3=0.8, L4=1.4
+  // Higher bias = small values picked less often at higher levels
+  const bias = [0, 0.4, 0.8, 1.4][level-1];
+
   if(topic==='addition'){
     const maxN=[10,20,50,100][level-1];
-    const a=rnd(1,maxN), b=rnd(1,maxN);
+    // At higher levels favour larger addends
+    const pool = Array.from({length:maxN}, (_,i)=>i+1);
+    const a = weightedPick(pool, bias);
+    const b = weightedPick(pool, bias);
     return {a, b, op:'+', answer:a+b, display:`${a} + ${b}`};
   }
   if(topic==='subtraction'){
     const maxN=[20,30,50,100][level-1];
-    const a=rnd(1,maxN);
-    const b=rnd(1,a); // b≤a so answer≥0
+    const pool = Array.from({length:maxN}, (_,i)=>i+1);
+    const a = weightedPick(pool, bias);
+    const b = rnd(1,a); // b≤a so answer≥0
     return {a, b, op:'−', answer:a-b, display:`${a} − ${b}`};
   }
   if(topic==='multiplication'){
     const maxF=[5,10,12,15][level-1];
-    const a=rnd(1,maxF), b=rnd(1,maxF);
+    // Build pool from 2 upward (skip trivial ×1 at higher levels via weighting)
+    const pool = Array.from({length:maxF-1}, (_,i)=>i+2); // 2..maxF
+    const a = weightedPick(pool, bias);
+    const b = weightedPick(pool, bias);
     return {a, b, op:'×', answer:a*b, display:`${a} × ${b}`};
   }
   if(topic==='division'){
     const divisorSets=[[1,2,3],[1,2,3,4,5],[1,2,3,4,5,6,7,8,9],[2,3,4,5,6,7,8,9,10,11,12]];
     const maxN=[30,50,81,144][level-1];
     const divisors=divisorSets[level-1];
-    const d=divisors[Math.floor(Math.random()*divisors.length)];
+    // Weighted pick so larger divisors appear more at higher levels
+    const d = weightedPick(divisors, bias);
     const maxQ=Math.floor(maxN/d);
     const q=rnd(1,maxQ);
     const n=d*q;
@@ -1391,14 +1415,11 @@ function genOneQ(level, topic){
     return {a:n, b:d, op:'÷', answer:q, display:`${n} ÷ ${d}`};
   }
   if(topic==='fractions'){
-    // Show fraction, ask for simplified numerator or equivalent value
     // Level 1: halves/quarters, Level 2: thirds/fifths,
-    // Level 3: sixths/eighths, Level 4: mixed
+    // Level 3: sixths/eighths, Level 4: mixed — larger denoms weighted up
     const denoms=[[2,4],[3,5],[6,8],[3,4,5,6,8,10]][level-1];
-    const denom=denoms[Math.floor(Math.random()*denoms.length)];
+    const denom = weightedPick(denoms, bias);
     const numer=rnd(1,denom-1);
-    // Question: what is numer/denom of a whole number?
-    // Use multiples of denom so answer is whole number
     const whole=denom*rnd(1,[5,8,10,12][level-1]);
     const answer=(whole/denom)*numer;
     if(!Number.isInteger(answer)||answer<=0) return null;
