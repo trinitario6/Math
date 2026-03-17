@@ -662,8 +662,19 @@ canvas{width:100%;height:auto;display:block}
   opacity:0;transition:opacity .15s;
   font-weight:900;line-height:1;
 }
+.profile-edit-btn{
+  position:absolute;top:8px;left:8px;
+  width:22px;height:22px;border-radius:50%;
+  background:#007aff;color:#fff;
+  border:none;font-size:11px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .15s;
+  font-weight:900;line-height:1;
+}
 .profile-tile:hover .profile-delete-btn,
 .profile-tile.show-delete .profile-delete-btn{opacity:1}
+.profile-tile:hover .profile-edit-btn,
+.profile-tile.show-delete .profile-edit-btn{opacity:1}
 
 .add-profile-btn{
   width:100%;padding:15px 0;
@@ -2033,6 +2044,22 @@ function renderProfilesScreen(){
       xpEl.textContent = '⭐ '+(pStats.totalXP||0)+' XP';
     } catch{ xpEl.textContent = '⭐ 0 XP'; }
 
+    // Edit button (top-left)
+    const editBtn = document.createElement('button');
+    editBtn.className = 'profile-edit-btn';
+    editBtn.textContent = '✏';
+    editBtn.title = 'Edit profile';
+    editBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      openProfileEditor(p.id);
+    });
+    editBtn.addEventListener('touchend', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      openProfileEditor(p.id);
+    });
+
+    // Delete button (top-right)
     const delBtn = document.createElement('button');
     delBtn.className = 'profile-delete-btn';
     delBtn.textContent = '×';
@@ -2046,6 +2073,7 @@ function renderProfilesScreen(){
       }
     });
 
+    tile.appendChild(editBtn);
     tile.appendChild(avatar);
     tile.appendChild(nameEl);
     tile.appendChild(xpEl);
@@ -2056,12 +2084,13 @@ function renderProfilesScreen(){
       refreshHomeProfile();
       refreshXPBar();
       renderAchRow();
+      updateLevelDescriptions();
       const stats = loadStats();
       $('streak-count').textContent = stats.dayStreak||0;
       showScreen('home');
     });
 
-    // Long-press to show delete
+    // Long-press to reveal edit + delete buttons
     let pressTimer;
     tile.addEventListener('touchstart', ()=>{ pressTimer=setTimeout(()=>tile.classList.toggle('show-delete'),600); }, {passive:true});
     tile.addEventListener('touchend', ()=>clearTimeout(pressTimer), {passive:true});
@@ -2077,6 +2106,13 @@ let pendingPhoto = null;     // base64 photo from file input
 function openProfileEditor(profileId){
   editingProfileId = profileId||null;
   pendingPhoto = null;
+
+  // Update sheet heading dynamically
+  const saveBtn = $('pedit-save');
+  const cancelBtn = $('pedit-cancel');
+  if(saveBtn){
+    saveBtn.textContent = profileId ? 'Save Changes' : 'Save Profile';
+  }
 
   // Build emoji picker
   const picker = $('emoji-picker');
@@ -2148,13 +2184,20 @@ function saveProfileEditor(){
     setActiveProfileId(p.id);
   }
 
+  const wasEditing = editingProfileId;
   closeProfileEditor();
   renderProfilesScreen();
-  // If we just created first profile, go home
-  if(!editingProfileId || getActiveProfileId()){
+
+  if(wasEditing){
+    // Edited existing profile — stay on profiles screen, refresh home data
+    refreshHomeProfile();
+    refreshXPBar();
+  } else {
+    // Created new profile — go straight to home
     refreshHomeProfile();
     refreshXPBar();
     renderAchRow();
+    updateLevelDescriptions();
     const stats = loadStats();
     $('streak-count').textContent = stats.dayStreak||0;
     showScreen('home');
