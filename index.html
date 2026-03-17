@@ -1349,9 +1349,15 @@ function rnd(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
 function genQ(level, topic){
   topic = topic || S.topic || 'addition';
   const qs=[];
-  while(qs.length<20){
+  const seen=new Set();   // track question keys to prevent repeats
+  let attempts=0;
+  while(qs.length<20 && attempts<2000){
+    attempts++;
     let q = genOneQ(level, topic);
-    if(q) qs.push(q);
+    if(!q) continue;
+    if(seen.has(q.display)) continue;  // skip duplicate
+    seen.add(q.display);
+    qs.push(q);
   }
   return qs;
 }
