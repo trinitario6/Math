@@ -1671,7 +1671,7 @@ function showResults(session,newBadges){
   $('xp-burst').textContent='+'+S.sessionXP+' XP';
   const headlines={100:'Perfect! 🎉',90:'Excellent!',80:'Great Job!',70:'Good Work!',0:'Keep Going!'};
   $('r-headline').textContent=headlines[band];
-  $('r-sub').textContent=`${session.topicName||''} · Section ${session.section} · Lv ${session.level}`;
+  $('r-sub').textContent=`${session.topicName||''} · Section ${session.section} · ${LEVELS[session.level]?.name||''}`.replace(/^\s*·\s*/,'');
   $('r-score').textContent=`${session.score}/20`;
   $('r-acc').textContent=`${session.accuracy}%`;
   $('r-time').textContent=fmtTime(session.timeMs);
@@ -1820,7 +1820,8 @@ function renderBests(){
     const ls=sessions.filter(s=>s.level===lv);if(!ls.length)return;
     const ba=ls.reduce((a,b)=>b.accuracy>a.accuracy?b:a);
     const bt=ls.reduce((a,b)=>b.timeMs<a.timeMs?b:a);
-    grid.innerHTML+=`<div class="best-card"><div class="bc-ico">${LEVELS[lv].emoji}</div><div class="bc-val">${ba.accuracy}%</div><div class="bc-lbl">Lv${lv} Best Acc</div><div class="bc-sub">${new Date(ba.date).toLocaleDateString()}</div></div><div class="best-card"><div class="bc-ico">⚡</div><div class="bc-val">${fmtTime(bt.timeMs)}</div><div class="bc-lbl">Lv${lv} Fastest</div><div class="bc-sub">${bt.accuracy}% acc</div></div>`;
+    const lvName=LEVELS[lv].name;
+    grid.innerHTML+=`<div class="best-card"><div class="bc-ico">${LEVELS[lv].emoji}</div><div class="bc-val">${ba.accuracy}%</div><div class="bc-lbl">${lvName} · Best Acc</div><div class="bc-sub">${new Date(ba.date).toLocaleDateString()}</div></div><div class="best-card"><div class="bc-ico">⚡</div><div class="bc-val">${fmtTime(bt.timeMs)}</div><div class="bc-lbl">${lvName} · Fastest</div><div class="bc-sub">${bt.accuracy}% acc</div></div>`;
   });
 }
 
